@@ -70,3 +70,4 @@ func LoginInto_AsStudent(apicfg *config.ApiConfig, login models.Login) (models.L
 	}, nil
 
 }
+

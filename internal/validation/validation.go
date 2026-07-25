@@ -14,10 +14,16 @@ func ValidateRegister(register models.Register) error {
 	return nil
 }
 
-
 func ValidateLogin(student models.Login) error {
 
 	if err := validate.Struct(student); err != nil {
+		return FormatValidationError(err)
+	}
+	return nil
+}
+
+func ValidateTasks(tasks models.Task) error {
+	if err := validate.Struct(tasks); err != nil {
 		return FormatValidationError(err)
 	}
 	return nil
