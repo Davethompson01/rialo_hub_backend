@@ -48,21 +48,70 @@ func RejectEmployee(api *config.ApiConfig, applicationID int) (string, error) {
 	return "Applicant rejected successfully", nil
 }
 
+func GetTaskApplications(api *config.ApiConfig, taskID, employerID int) ([]models.ApplicationResponse, error) {
 
-// func CancelApplication(api *config.ApiConfig, applicationID, employeeID int) (string, error) {
+	ownsTask, err := repositary.IsTaskOwner(api, taskID, employerID)
+	if err != nil {
+		return nil, err
+	}
 
-// 	ownsApplication, err := repositary.IsApplicationOwner(api, applicationID, employeeID)
-// 	if err != nil {
-// 		return "", err
-// 	}
+	if !ownsTask {
+		return nil, errors.New("you are not authorized")
+	}
 
-// 	if !ownsApplication {
-// 		return "", errors.New("you are not allowed to cancel this application")
-// 	}
+	return repositary.GetTaskApplications(api, taskID)
+}
 
-// 	if err := repository.DeleteApplication(api, applicationID); err != nil {
-// 		return "", err
-// 	}
+func GetMyApplications(api *config.ApiConfig, employeeID int) ([]models.ApplicationResponse, error) {
 
-// 	return "Application cancelled successfully", nil
-// }
+	return repositary.GetMyApplications(api, employeeID)
+}
+
+func CancelApplication(api *config.ApiConfig, applicationID, employeeID int) (string, error) {
+
+	ownsApplication, err := repositary.IsApplicationOwner(api, applicationID, employeeID)
+	if err != nil {
+		return "", err
+	}
+
+	if !ownsApplication {
+		return "", errors.New("you are not allowed to cancel this application")
+	}
+
+	if err := repositary.DeleteApplication(api, applicationID); err != nil {
+		return "", err
+	}
+
+	return "Application cancelled successfully", nil
+}
+
+func CloseTask(api *config.ApiConfig, taskID int) (string, error) {
+
+	if err := repositary.UpdateTaskStatus(api, taskID, "closed"); err != nil {
+		return "", err
+	}
+
+	if err := repositary.RejectPendingApplications(api, taskID); err != nil {
+		return "", err
+	}
+
+	return "Task closed successfully", nil
+}
+
+func DeleteTask(api *config.ApiConfig, taskID, ownerID int) (string, error) {
+
+	ownsTask, err := repositary.IsTaskOwner(api, taskID, ownerID)
+	if err != nil {
+		return "", err
+	}
+
+	if !ownsTask {
+		return "", errors.New("you are not allowed to delete this task")
+	}
+
+	if err := repositary.DeleteTask(api, taskID); err != nil {
+		return "", err
+	}
+
+	return "Task deleted successfully", nil
+}
