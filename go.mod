@@ -3,6 +3,7 @@ module github.com/Davethompson01/rialo_hub_backend
 go 1.25.5
 
 require (
+	github.com/go-chi/chi v1.5.5
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/jackc/pgx/v5 v5.10.0
