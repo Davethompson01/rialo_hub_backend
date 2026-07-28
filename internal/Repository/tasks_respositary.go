@@ -1,4 +1,4 @@
-package repositary
+package repository
 
 import (
 	"context"
@@ -16,10 +16,9 @@ func CreateTasks(api *config.ApiConfig, task models.Task) error {
 			description,
 			reward,
 			status,
-			deadline,
-			created_at
+			deadline
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES ($1, $2, $3, $4, $5, $6) retur
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -34,7 +33,6 @@ func CreateTasks(api *config.ApiConfig, task models.Task) error {
 		task.Reward,
 		task.Status,
 		task.Deadline,
-		task.CreatedAt,
 	)
 
 	return err
@@ -129,9 +127,6 @@ func IsTaskAlreadyAssigned(api *config.ApiConfig, taskID int) (bool, error) {
 	return exists, nil
 }
 
-
-
-
 func IsTaskOwner(api *config.ApiConfig, taskID, userID int) (bool, error) {
 
 	query := `
@@ -180,7 +175,6 @@ func IsApplicationOwner(api *config.ApiConfig, applicationID, employeeID int) (b
 	return exists, nil
 }
 
-
 func DeleteApplication(api *config.ApiConfig, applicationID int) error {
 
 	query := `
@@ -194,7 +188,6 @@ func DeleteApplication(api *config.ApiConfig, applicationID int) error {
 	_, err := api.DB.ExecContext(ctx, query, applicationID)
 	return err
 }
-
 
 func UpdateTaskStatus(api *config.ApiConfig, taskID int, status string) error {
 
@@ -210,7 +203,6 @@ func UpdateTaskStatus(api *config.ApiConfig, taskID int, status string) error {
 	_, err := api.DB.ExecContext(ctx, query, status, taskID)
 	return err
 }
-
 
 func RejectPendingApplications(api *config.ApiConfig, taskID int) error {
 

@@ -9,13 +9,13 @@ import (
 	"github.com/Davethompson01/rialo_hub_backend/internal/services"
 )
 
-func StudenthandlerCreateAccount(apicfg *config.ApiConfig) http.HandlerFunc {
+func CreateUser(apicfg *config.ApiConfig) http.HandlerFunc {
 
 	return func(res http.ResponseWriter, r *http.Request) {
 		var register models.Register
 		json.NewDecoder(r.Body).Decode(&register)
 
-		studentServices, err := services.Register(apicfg, register)
+		create, err := services.Register(apicfg, register)
 		if err != nil {
 			RespondWithJson(res, 400, false, err.Error(), nil)
 			return
@@ -25,9 +25,49 @@ func StudenthandlerCreateAccount(apicfg *config.ApiConfig) http.HandlerFunc {
 			res,
 			http.StatusCreated,
 			true,
-			studentServices,
+			create,
 			nil,
 		)
 
 	}
+}
+
+func Login(apicfg *config.ApiConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var loginModel models.Login
+		json.NewDecoder(r.Body).Decode(&loginModel)
+
+		login, err := services.LoginInto_AsStudent(apicfg, loginModel)
+		if err != nil {
+			RespondWithJson(w, 400, false, err.Error(), nil)
+			return
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     "access_token",
+			Value:    login.AccessToken,
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   15 * 60,
+		})
+
+		http.SetCookie(w, &http.Cookie{
+			Name:     "refresh_token",
+			Value:    login.RefreshToken,
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   7 * 24 * 60 * 60,
+		})
+		RespondWithJson(
+			w,
+			http.StatusCreated,
+			true,
+			"Login Successful",
+			struct{}{},
+		)
+	}
+
 }

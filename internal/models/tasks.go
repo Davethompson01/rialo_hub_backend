@@ -10,7 +10,6 @@ type Task struct {
 	Reward      int `validate:"required"`
 	Status      string
 	Deadline    time.Time `validate:"required"`
-	CreatedAt   time.Time
 }
 
 type TaskApplication struct {

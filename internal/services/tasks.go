@@ -4,13 +4,13 @@ import (
 	"errors"
 
 	"github.com/Davethompson01/rialo_hub_backend/config"
-	repositary "github.com/Davethompson01/rialo_hub_backend/internal/Repositary"
+	repository "github.com/Davethompson01/rialo_hub_backend/internal/Repository"
 	"github.com/Davethompson01/rialo_hub_backend/internal/models"
 	"github.com/Davethompson01/rialo_hub_backend/internal/validation"
 )
 
 func AcceptEmployee(api *config.ApiConfig, applicationID, taskID int) (string, error) {
-	assigned, err := repositary.IsTaskAlreadyAssigned(api, taskID)
+	assigned, err := repository.IsTaskAlreadyAssigned(api, taskID)
 	if err != nil {
 		return "", err
 	}
@@ -19,7 +19,7 @@ func AcceptEmployee(api *config.ApiConfig, applicationID, taskID int) (string, e
 		return "", errors.New("this task already has an accepted applicant")
 	}
 
-	if err := repositary.UpdateApplicationStatus(api, applicationID, "accepted"); err != nil {
+	if err := repository.UpdateApplicationStatus(api, applicationID, "accepted"); err != nil {
 		return "", err
 	}
 
@@ -31,7 +31,7 @@ func CreateTasks(api *config.ApiConfig, task models.Task) (string, error) {
 		return err.Error(), err
 	}
 
-	CreateTasks := repositary.CreateTasks(api, task)
+	CreateTasks := repository.CreateTasks(api, task)
 	if CreateTasks != nil {
 		return CreateTasks.Error(), nil
 	}
@@ -41,7 +41,7 @@ func CreateTasks(api *config.ApiConfig, task models.Task) (string, error) {
 
 func RejectEmployee(api *config.ApiConfig, applicationID int) (string, error) {
 
-	if err := repositary.UpdateApplicationStatus(api, applicationID, "rejected"); err != nil {
+	if err := repository.UpdateApplicationStatus(api, applicationID, "rejected"); err != nil {
 		return "", err
 	}
 
@@ -50,7 +50,7 @@ func RejectEmployee(api *config.ApiConfig, applicationID int) (string, error) {
 
 func GetTaskApplications(api *config.ApiConfig, taskID, employerID int) ([]models.ApplicationResponse, error) {
 
-	ownsTask, err := repositary.IsTaskOwner(api, taskID, employerID)
+	ownsTask, err := repository.IsTaskOwner(api, taskID, employerID)
 	if err != nil {
 		return nil, err
 	}
@@ -59,17 +59,17 @@ func GetTaskApplications(api *config.ApiConfig, taskID, employerID int) ([]model
 		return nil, errors.New("you are not authorized")
 	}
 
-	return repositary.GetTaskApplications(api, taskID)
+	return repository.GetTaskApplications(api, taskID)
 }
 
 func GetMyApplications(api *config.ApiConfig, employeeID int) ([]models.ApplicationResponse, error) {
 
-	return repositary.GetMyApplications(api, employeeID)
+	return repository.GetMyApplications(api, employeeID)
 }
 
 func CancelApplication(api *config.ApiConfig, applicationID, employeeID int) (string, error) {
 
-	ownsApplication, err := repositary.IsApplicationOwner(api, applicationID, employeeID)
+	ownsApplication, err := repository.IsApplicationOwner(api, applicationID, employeeID)
 	if err != nil {
 		return "", err
 	}
@@ -78,7 +78,7 @@ func CancelApplication(api *config.ApiConfig, applicationID, employeeID int) (st
 		return "", errors.New("you are not allowed to cancel this application")
 	}
 
-	if err := repositary.DeleteApplication(api, applicationID); err != nil {
+	if err := repository.DeleteApplication(api, applicationID); err != nil {
 		return "", err
 	}
 
@@ -87,11 +87,11 @@ func CancelApplication(api *config.ApiConfig, applicationID, employeeID int) (st
 
 func CloseTask(api *config.ApiConfig, taskID int) (string, error) {
 
-	if err := repositary.UpdateTaskStatus(api, taskID, "closed"); err != nil {
+	if err := repository.UpdateTaskStatus(api, taskID, "closed"); err != nil {
 		return "", err
 	}
 
-	if err := repositary.RejectPendingApplications(api, taskID); err != nil {
+	if err := repository.RejectPendingApplications(api, taskID); err != nil {
 		return "", err
 	}
 
@@ -100,7 +100,7 @@ func CloseTask(api *config.ApiConfig, taskID int) (string, error) {
 
 func DeleteTask(api *config.ApiConfig, taskID, ownerID int) (string, error) {
 
-	ownsTask, err := repositary.IsTaskOwner(api, taskID, ownerID)
+	ownsTask, err := repository.IsTaskOwner(api, taskID, ownerID)
 	if err != nil {
 		return "", err
 	}
@@ -109,10 +109,9 @@ func DeleteTask(api *config.ApiConfig, taskID, ownerID int) (string, error) {
 		return "", errors.New("you are not allowed to delete this task")
 	}
 
-	if err := repositary.DeleteTask(api, taskID); err != nil {
+	if err := repository.DeleteTask(api, taskID); err != nil {
 		return "", err
 	}
 
 	return "Task deleted successfully", nil
 }
-

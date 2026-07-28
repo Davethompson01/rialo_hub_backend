@@ -1,4 +1,4 @@
-package repositary
+package repository
 
 import (
 	"context"
@@ -10,8 +10,8 @@ import (
 
 func CreateUser(api *config.ApiConfig, models models.Register) error {
 
-	query := `INSERT INTO users(discord_username, username, role, password, created_at)
-		VALUES($1, $2, $3, $4, $5)`
+	query := `INSERT INTO users(discord_username, username, role, password)
+		VALUES($1, $2, $3, $4)`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -22,7 +22,6 @@ func CreateUser(api *config.ApiConfig, models models.Register) error {
 		models.UserName,
 		models.Role,
 		models.Password,
-		models.Created_at,
 	)
 
 	return err
@@ -33,7 +32,7 @@ func CheckDiscordExist(apiCfg *config.ApiConfig, email string) bool {
 
 	query := `
 		SELECT EXISTS (
-			SELECT 1 FROM register WHERE email = $1
+			SELECT 1 FROM users WHERE discord_username = $1
 		)
 	`
 
@@ -50,8 +49,8 @@ func GetUserByUsername(apiCfg *config.ApiConfig, discord_username string) (model
 
 	query := `
 		SELECT user_id, username, password, role
-		FROM register
-		WHERE discord_username = $1
+		FROM users
+		WHERE username = $1
 		LIMIT 1;
 	`
 

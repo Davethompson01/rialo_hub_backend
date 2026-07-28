@@ -6,19 +6,19 @@ import (
 
 	"github.com/Davethompson01/rialo_hub_backend/config"
 	auth "github.com/Davethompson01/rialo_hub_backend/internal/Auth"
-	repositary "github.com/Davethompson01/rialo_hub_backend/internal/Repositary"
+	repository "github.com/Davethompson01/rialo_hub_backend/internal/Repository"
 	"github.com/Davethompson01/rialo_hub_backend/internal/models"
 	"github.com/Davethompson01/rialo_hub_backend/internal/validation"
 )
 
 func Register(api *config.ApiConfig, register models.Register) (string, error) {
 
-	if repositary.CheckDiscordExist(api, register.DiscordUserName) {
-		return "", errors.New("Discord Username already exists")
-	}
-
 	if err := validation.ValidateRegister(register); err != nil {
 		return "", err
+	}
+
+	if repository.CheckDiscordExist(api, register.DiscordUserName) {
+		return "", errors.New("Discord Username already exists")
 	}
 
 	hashedPassword, err := auth.HashPassword(register.Password)
@@ -26,7 +26,7 @@ func Register(api *config.ApiConfig, register models.Register) (string, error) {
 		return err.Error(), err
 	}
 	register.Password = hashedPassword
-	if err := repositary.CreateUser(api, register); err != nil {
+	if err := repository.CreateUser(api, register); err != nil {
 		return err.Error(), err
 	}
 
@@ -36,16 +36,16 @@ func Register(api *config.ApiConfig, register models.Register) (string, error) {
 
 func LoginInto_AsStudent(apicfg *config.ApiConfig, login models.Login) (models.LoginTokens, error) {
 
-	checkMailExist, err := repositary.GetUserByUsername(apicfg, login.Username)
+	err := validation.ValidateLogin(login)
+	if err != nil {
+		return models.LoginTokens{}, fmt.Errorf("Invalid Credentials")
+	}
+	checkMailExist, err := repository.GetUserByUsername(apicfg, login.Username)
 	if err != nil {
 		return models.LoginTokens{}, err
 	}
 	// fmt.Println("%v", checkMailExist)
 
-	err = validation.ValidateLogin(login)
-	if err != nil {
-		return models.LoginTokens{}, fmt.Errorf("Invalid Credentials")
-	}
 	comparePassword := auth.ComparePassword(checkMailExist.Password, login.Password)
 	if comparePassword != nil {
 
@@ -70,4 +70,3 @@ func LoginInto_AsStudent(apicfg *config.ApiConfig, login models.Login) (models.L
 	}, nil
 
 }
-
