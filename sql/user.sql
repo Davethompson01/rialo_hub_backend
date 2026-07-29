@@ -8,3 +8,7 @@ CREATE TABLE users (
     password TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+
+ALTER Table users ADD COLUMN profile_pics TEXT default NULL;

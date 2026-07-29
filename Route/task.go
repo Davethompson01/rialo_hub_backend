@@ -14,5 +14,7 @@ func Task(r chi.Router, api *config.ApiConfig) {
 		r.Use(middleware.RequireRole("admin", "super_admin", "Artist", "Writer"))
 
 		r.Post("/create", handler.CreateTasks(api))
+		r.Post("/apply", handler.ApplyForTasks(api))
+
 	})
 }

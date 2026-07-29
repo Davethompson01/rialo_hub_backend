@@ -29,9 +29,57 @@ func CreateTasks(api *config.ApiConfig) http.HandlerFunc {
 			w,
 			200,
 			true,
+			"Tasks created Successfully",
 			CreateTasks,
-			nil,
 		)
 	}
+}
 
+func ApplyForTasks(api *config.ApiConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var apply models.TaskApplication
+		json.NewDecoder(r.Body).Decode(&apply)
+
+		claims := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
+		apply.Employee_id = claims.UserID
+		apply.Status = "Ongoing"
+
+		tasksApplication, err := services.ApplyForTasks(api, apply)
+		if err != nil {
+			RespondWithJson(w, 400, false, err.Error(), nil)
+			return
+		}
+
+		RespondWithJson(
+			w,
+			201,
+			true,
+			"Application Sent Successfully",
+			tasksApplication,
+		)
+	}
+}
+
+func AcceptEmployee(api *config.ApiConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var apply models.TaskApplication
+		json.NewDecoder(r.Body).Decode(&apply)
+
+		// claims := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
+		// apply.Employee_id = claims.UserID
+		apply.Status = "Accepted"
+
+		acceptEmployee, err := services.AcceptEmployee(api, apply.ID, apply.Task_id)
+		if err != nil {
+			RespondWithJson(w, 400, false, err.Error(), nil)
+			return
+		}
+		RespondWithJson(
+			w,
+			201,
+			true,
+			"Applicant accepted successfully",
+			acceptEmployee,
+		)
+	}
 }

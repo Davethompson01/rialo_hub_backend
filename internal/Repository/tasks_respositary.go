@@ -8,7 +8,7 @@ import (
 	"github.com/Davethompson01/rialo_hub_backend/internal/models"
 )
 
-func CreateTasks(api *config.ApiConfig, task models.Task) error {
+func CreateTasks(api *config.ApiConfig, task models.Task) (models.Task, error) {
 	query := `
 		INSERT INTO tasks(
 			user_id,
@@ -18,13 +18,24 @@ func CreateTasks(api *config.ApiConfig, task models.Task) error {
 			status,
 			deadline
 		)
-		VALUES ($1, $2, $3, $4, $5, $6) retur
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING
+			task_id,
+			user_id,
+			title,
+			description,
+			reward,
+			status,
+			deadline,
+			created_at
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	_, err := api.DB.ExecContext(
+	var createdTask models.Task
+
+	err := api.DB.QueryRowContext(
 		ctx,
 		query,
 		task.UserID,
@@ -33,39 +44,66 @@ func CreateTasks(api *config.ApiConfig, task models.Task) error {
 		task.Reward,
 		task.Status,
 		task.Deadline,
+	).Scan(
+		&createdTask.ID,
+		&createdTask.UserID,
+		&createdTask.Title,
+		&createdTask.Description,
+		&createdTask.Reward,
+		&createdTask.Status,
+		&createdTask.Deadline,
+		&createdTask.CreatedAt,
 	)
+	if err != nil {
+		return models.Task{}, err
+	}
 
-	return err
+	return createdTask, nil
 }
 
-func TaskApplication(api *config.ApiConfig, application models.TaskApplication) error {
+func TaskApplication(api *config.ApiConfig, task models.TaskApplication) (models.TaskApplication, error) {
 	query := `
-		INSERT INTO task_application(
-			task_id,
-			employee_id,
-			employer_id,
-			skills,
-			status,
-			applied_at
-		)
-		VALUES ($1, $2, $3, $4, $5, $6)
-	`
+        INSERT INTO task_application (
+            task_id,
+            employee_id,
+            employer_id,
+            skills,
+            status
+        )
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING
+            task_id,
+            employee_id,
+            employer_id,
+            skills,
+            status
+    `
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	_, err := api.DB.ExecContext(
+	var application models.TaskApplication
+
+	err := api.DB.QueryRowContext(
 		ctx,
 		query,
-		application.Task_id,
-		application.Employee_id,
-		application.Employer_id,
-		application.Skills,
-		application.Status,
-		application.AppliedAt,
+		task.Task_id,
+		task.Employee_id,
+		task.Employer_id,
+		task.Skills,
+		task.Status,
+	).Scan(
+		&application.Task_id,
+		&application.Employee_id,
+		&application.Employer_id,
+		&application.Skills,
+		&application.Status,
 	)
+	if err != nil {
+		return models.TaskApplication{}, err
+	}
 
-	return err
+	return application, nil
 }
 
 // func ApplicationResponse(api *config.ApiConfig, response models.ApplicationResponse) error {
@@ -110,7 +148,7 @@ func IsTaskAlreadyAssigned(api *config.ApiConfig, taskID int) (bool, error) {
 			SELECT 1
 			FROM task_application
 			WHERE task_id = $1
-			AND status = 'accepted'
+			AND status = 'Accepted'
 		)
 	`
 
@@ -127,13 +165,12 @@ func IsTaskAlreadyAssigned(api *config.ApiConfig, taskID int) (bool, error) {
 	return exists, nil
 }
 
-func IsTaskOwner(api *config.ApiConfig, taskID, userID int) (bool, error) {
-
+func IsTaskOwner(api *config.ApiConfig, taskID, employerID int) (bool, error) {
 	query := `
 		SELECT EXISTS(
 			SELECT 1
 			FROM tasks
-			WHERE id = $1
+			WHERE task_id = $1
 			AND user_id = $2
 		)
 	`
@@ -143,7 +180,7 @@ func IsTaskOwner(api *config.ApiConfig, taskID, userID int) (bool, error) {
 
 	var exists bool
 
-	err := api.DB.QueryRowContext(ctx, query, taskID, userID).Scan(&exists)
+	err := api.DB.QueryRowContext(ctx, query, taskID, employerID).Scan(&exists)
 	if err != nil {
 		return false, err
 	}
@@ -341,4 +378,18 @@ func GetMyApplications(api *config.ApiConfig, employeeID int) ([]models.Applicat
 	}
 
 	return applications, nil
+}
+
+func CheckTasksExist(api *config.ApiConfig, tasks_id int) bool {
+	var exists bool
+
+	query := `SELECT EXISTS(
+		SELECT 1 FROM tasks where tasks_id = $1
+	)`
+	err := api.DB.QueryRow(query, tasks_id).Scan(&exists)
+	if err != nil {
+		return false
+	}
+
+	return exists
 }

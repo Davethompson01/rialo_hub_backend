@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/Davethompson01/rialo_hub_backend/config"
 	repository "github.com/Davethompson01/rialo_hub_backend/internal/Repository"
@@ -23,20 +24,30 @@ func AcceptEmployee(api *config.ApiConfig, applicationID, taskID int) (string, e
 		return "", err
 	}
 
+	
+
 	return "Applicant accepted successfully", nil
 }
 
-func CreateTasks(api *config.ApiConfig, task models.Task) (string, error) {
+func CreateTasks(api *config.ApiConfig, task models.Task) (models.TaskResponse, error) {
 	if err := validation.ValidateTasks(task); err != nil {
-		return err.Error(), err
+		return models.TaskResponse{}, err
 	}
 
-	CreateTasks := repository.CreateTasks(api, task)
-	if CreateTasks != nil {
-		return CreateTasks.Error(), nil
+	createdTask, err := repository.CreateTasks(api, task)
+	if err != nil {
+		return models.TaskResponse{}, err
 	}
 
-	return "Tasks created Successfully", nil
+	profileModels, err := repository.SelectUserByID(api, task.UserID)
+	if err != nil {
+		return models.TaskResponse{}, err
+	}
+
+	return models.TaskResponse{
+		Task: createdTask,
+		User: profileModels,
+	}, nil
 }
 
 func RejectEmployee(api *config.ApiConfig, applicationID int) (string, error) {
@@ -114,4 +125,38 @@ func DeleteTask(api *config.ApiConfig, taskID, ownerID int) (string, error) {
 	}
 
 	return "Task deleted successfully", nil
+}
+
+func ApplyForTasks(api *config.ApiConfig, task models.TaskApplication) (models.TaskApplication, error) {
+	checkTasksExist := repository.CheckTasksExist(api, task.Task_id)
+	fmt.Println(checkTasksExist, task.Task_id)
+	if checkTasksExist {
+		return models.TaskApplication{}, fmt.Errorf("Task Not Found %v", checkTasksExist)
+	}
+
+	checkTaskOwner, err := repository.IsTaskOwner(api, task.Task_id, task.Employer_id)
+	if err != nil {
+		return models.TaskApplication{}, err
+	}
+
+	if checkTaskOwner {
+		return models.TaskApplication{}, fmt.Errorf("you created this task")
+	}
+
+	checkIsTaskAlreadyAssigned, err := repository.IsTaskAlreadyAssigned(api, task.Task_id)
+	if err != nil {
+		return models.TaskApplication{}, err
+	}
+
+	if checkIsTaskAlreadyAssigned {
+		return models.TaskApplication{}, fmt.Errorf("task has already been assigned")
+	}
+
+	createdApplication, err := repository.TaskApplication(api, task)
+	if err != nil {
+		return models.TaskApplication{}, fmt.Errorf("failed to apply for task: %w", err)
+	}
+
+	return createdApplication, nil
+
 }
