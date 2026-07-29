@@ -23,7 +23,7 @@ func DatabaseConnection() (*sql.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error while trying to connect database %v", err)
 	}
-
+	
 	db.SetMaxOpenConns(25)
 	db.SetConnMaxIdleTime(25)
 	db.SetConnMaxLifetime(5 * time.Minute)

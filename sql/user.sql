@@ -12,3 +12,4 @@ CREATE TABLE users (
 
 
 ALTER Table users ADD COLUMN profile_pics TEXT default NULL;
+ALTER Table users ADD COLUMN reputation TEXT default 0;

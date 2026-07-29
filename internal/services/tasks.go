@@ -10,7 +10,19 @@ import (
 	"github.com/Davethompson01/rialo_hub_backend/internal/validation"
 )
 
-func AcceptEmployee(api *config.ApiConfig, applicationID, taskID int) (string, error) {
+func AcceptEmployee(api *config.ApiConfig, applicationID, taskID, employerID int) (string, error) {
+	ownsTask, err := repository.IsTaskOwner(api, taskID, employerID)
+	if err != nil {
+		return "", err
+	}
+
+	// if !ownsTask {
+	// 	return "", errors.New("you are not authorized")
+	// }
+	if !ownsTask {
+		return "", fmt.Errorf("you are not authorized %v", ownsTask)
+	}
+
 	assigned, err := repository.IsTaskAlreadyAssigned(api, taskID)
 	if err != nil {
 		return "", err
@@ -20,11 +32,14 @@ func AcceptEmployee(api *config.ApiConfig, applicationID, taskID int) (string, e
 		return "", errors.New("this task already has an accepted applicant")
 	}
 
-	if err := repository.UpdateApplicationStatus(api, applicationID, "accepted"); err != nil {
+	if err := repository.UpdateApplicationStatus(api, applicationID, "Accepted"); err != nil {
 		return "", err
 	}
 
-	
+	UpdateTask := repository.UpdateTaskStatus(api, taskID, "Accepted")
+	if UpdateTask != nil {
+		return "", UpdateTask
+	}
 
 	return "Applicant accepted successfully", nil
 }
@@ -50,9 +65,30 @@ func CreateTasks(api *config.ApiConfig, task models.Task) (models.TaskResponse, 
 	}, nil
 }
 
-func RejectEmployee(api *config.ApiConfig, applicationID int) (string, error) {
+func RejectEmployee(api *config.ApiConfig, applicationID, taskID, employerID int) (string, error) {
+	ownsTask, err := repository.IsTaskOwner(api, taskID, employerID)
+	if err != nil {
+		return "", err
+	}
 
-	if err := repository.UpdateApplicationStatus(api, applicationID, "rejected"); err != nil {
+	if !ownsTask {
+		return "", errors.New("you are not authorized")
+	}
+
+	exists, err := repository.IsApplicationForTask(api, applicationID, taskID)
+	if err != nil {
+		return "", err
+	}
+
+	if !exists {
+		return "", errors.New("application does not belong to this task")
+	}
+	checkTasksExist := repository.CheckTasksExist(api, taskID)
+	if !checkTasksExist {
+		return "", fmt.Errorf("Task Not Found %v", checkTasksExist)
+	}
+
+	if err := repository.UpdateApplicationStatus(api, applicationID, "Rejected"); err != nil {
 		return "", err
 	}
 
@@ -74,7 +110,6 @@ func GetTaskApplications(api *config.ApiConfig, taskID, employerID int) ([]model
 }
 
 func GetMyApplications(api *config.ApiConfig, employeeID int) ([]models.ApplicationResponse, error) {
-
 	return repository.GetMyApplications(api, employeeID)
 }
 
@@ -96,18 +131,26 @@ func CancelApplication(api *config.ApiConfig, applicationID, employeeID int) (st
 	return "Application cancelled successfully", nil
 }
 
-func CloseTask(api *config.ApiConfig, taskID int) (string, error) {
+// func CloseTask(api *config.ApiConfig, taskID, employerID int) (string, error) {
 
-	if err := repository.UpdateTaskStatus(api, taskID, "closed"); err != nil {
-		return "", err
-	}
+// 	ownsTask, err := repository.IsTaskOwner(api, taskID, employerID)
+// 	if err != nil {
+// 		return "", err
+// 	}
 
-	if err := repository.RejectPendingApplications(api, taskID); err != nil {
-		return "", err
-	}
+// 	if !ownsTask {
+// 		return "", errors.New("you are not authorized")
+// 	}
+// 	if err := repository.UpdateTaskStatus(api, taskID, "closed"); err != nil {
+// 		return "", err
+// 	}
 
-	return "Task closed successfully", nil
-}
+// 	if err := repository.RejectPendingApplications(api, taskID); err != nil {
+// 		return "", err
+// 	}
+
+// 	return "Task closed successfully", nil
+// }
 
 func DeleteTask(api *config.ApiConfig, taskID, ownerID int) (string, error) {
 
@@ -130,7 +173,7 @@ func DeleteTask(api *config.ApiConfig, taskID, ownerID int) (string, error) {
 func ApplyForTasks(api *config.ApiConfig, task models.TaskApplication) (models.TaskApplication, error) {
 	checkTasksExist := repository.CheckTasksExist(api, task.Task_id)
 	fmt.Println(checkTasksExist, task.Task_id)
-	if checkTasksExist {
+	if !checkTasksExist {
 		return models.TaskApplication{}, fmt.Errorf("Task Not Found %v", checkTasksExist)
 	}
 
@@ -147,6 +190,13 @@ func ApplyForTasks(api *config.ApiConfig, task models.TaskApplication) (models.T
 	if err != nil {
 		return models.TaskApplication{}, err
 	}
+	applicantAppliedAlready, err := repository.HasEmployeeApplied(api, task.Task_id, task.Employee_id)
+	if err != nil {
+		return models.TaskApplication{}, err
+	}
+	if applicantAppliedAlready {
+		return models.TaskApplication{}, fmt.Errorf("you applied to this task already")
+	}
 
 	if checkIsTaskAlreadyAssigned {
 		return models.TaskApplication{}, fmt.Errorf("task has already been assigned")
@@ -160,3 +210,7 @@ func ApplyForTasks(api *config.ApiConfig, task models.TaskApplication) (models.T
 	return createdApplication, nil
 
 }
+
+// func TasksRandomly(api *config.ApiConfig, task models.TaskApplication){
+
+// }

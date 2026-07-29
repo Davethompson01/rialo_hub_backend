@@ -132,7 +132,7 @@ func UpdateApplicationStatus(api *config.ApiConfig, applicationID int, status st
 	query := `
 		UPDATE task_application
 		SET status = $1
-		WHERE id = $2
+		WHERE task_application_id = $2
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -188,6 +188,24 @@ func IsTaskOwner(api *config.ApiConfig, taskID, employerID int) (bool, error) {
 	return exists, nil
 }
 
+func IsApplicationForTask(api *config.ApiConfig, applicationID, taskID int) (bool, error) {
+	query := `
+		SELECT EXISTS (
+			SELECT 1
+			FROM task_application
+			WHERE task_application_id = $1
+			  AND task_id = $2
+		)
+	`
+
+	var exists bool
+	err := api.DB.QueryRow(query, applicationID, taskID).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
 func IsApplicationOwner(api *config.ApiConfig, applicationID, employeeID int) (bool, error) {
 
 	query := `
@@ -205,6 +223,29 @@ func IsApplicationOwner(api *config.ApiConfig, applicationID, employeeID int) (b
 	var exists bool
 
 	err := api.DB.QueryRowContext(ctx, query, applicationID, employeeID).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
+
+func HasEmployeeApplied(api *config.ApiConfig, taskID, employeeID int) (bool, error) {
+	query := `
+		SELECT EXISTS(
+			SELECT 1
+			FROM task_application
+			WHERE task_id = $1
+			  AND employee_id = $2
+		)
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var exists bool
+
+	err := api.DB.QueryRowContext(ctx, query, taskID, employeeID).Scan(&exists)
 	if err != nil {
 		return false, err
 	}
@@ -231,7 +272,7 @@ func UpdateTaskStatus(api *config.ApiConfig, taskID int, status string) error {
 	query := `
 		UPDATE tasks
 		SET status = $1
-		WHERE id = $2
+		WHERE task_id = $2
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -275,11 +316,11 @@ func GetTaskApplications(api *config.ApiConfig, taskID int) ([]models.Applicatio
 
 	query := `
 		SELECT
-			ta.application_id,
+			ta.task_application_id,
 			ta.task_id,
 			u.user_id,
 			u.username,
-			u.avatar,
+			COALESCE(u.profile_pics, '') AS profile_pics,
 			u.reputation,
 			ta.status
 		FROM task_application ta
@@ -334,7 +375,7 @@ func GetMyApplications(api *config.ApiConfig, employeeID int) ([]models.Applicat
 			ta.task_id,
 			u.user_id,
 			u.username,
-			u.avatar,
+			u.profile_pics,
 			u.reputation,
 			ta.status
 		FROM task_application ta
@@ -384,7 +425,7 @@ func CheckTasksExist(api *config.ApiConfig, tasks_id int) bool {
 	var exists bool
 
 	query := `SELECT EXISTS(
-		SELECT 1 FROM tasks where tasks_id = $1
+		SELECT 1 FROM tasks where task_id = $1
 	)`
 	err := api.DB.QueryRow(query, tasks_id).Scan(&exists)
 	if err != nil {
@@ -392,4 +433,8 @@ func CheckTasksExist(api *config.ApiConfig, tasks_id int) bool {
 	}
 
 	return exists
+}
+
+func TaskByRewards(api *config.ApiConfig) {
+
 }

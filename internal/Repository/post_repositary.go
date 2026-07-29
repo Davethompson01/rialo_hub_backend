@@ -100,7 +100,7 @@ func PostAuthor(api *config.ApiConfig, postID int) (models.PostAuthor, error) {
 			u.user_id,
 			u.username,
 			u.discord_username,
-			u.avatar
+			u.profile_pics
 		FROM socialposts sp
 		JOIN users u
 			ON u.user_id = sp.user_id
