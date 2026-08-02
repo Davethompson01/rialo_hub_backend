@@ -10,6 +10,7 @@ type Task struct {
 	Title       string `validate:"required,min=8"`
 	Description string `validate:"required,min=8"`
 	Reward      int    `validate:"required"`
+	Role        string `validate:"required"`
 	Status      string
 	Deadline    time.Time `validate:"required"`
 	CreatedAt   time.Time

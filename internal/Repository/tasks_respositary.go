@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	
 	"time"
 
 	"github.com/Davethompson01/rialo_hub_backend/config"
@@ -435,6 +436,57 @@ func CheckTasksExist(api *config.ApiConfig, tasks_id int) bool {
 	return exists
 }
 
-func TaskByRewards(api *config.ApiConfig) {
+func TaskFeeds(api *config.ApiConfig) ([]models.Task, error) {
+	query := `
+		SELECT
+			tk.task_id,
+			tk.user_id,
+			tk.title,
+			tk.description,
+			tk.reward,
+			tk.role,
+			tk.status,
+			tk.deadline
+		FROM task tk
+		JOIN users u
+			ON tk.user_id = u.user_id
+		ORDER BY tk.created_at DESC
+	`
 
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := api.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var tasks []models.Task
+
+	for rows.Next() {
+		var task models.Task
+
+		err := rows.Scan(
+			&task.ID,
+			&task.UserID,
+			&task.Title,
+			&task.Description,
+			&task.Reward,
+			&task.Role,
+			&task.Status,
+			&task.Deadline,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		tasks = append(tasks, task)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
 }
