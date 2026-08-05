@@ -16,10 +16,10 @@ jobs:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.PORT }}
+          port: ${{ secrets.VPS_PORT }}
           script: |
             cd /root/rialo_hub_backend
 
