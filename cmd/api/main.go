@@ -16,12 +16,15 @@ import (
 
 func main() {
 	fmt.Println("Server successfully started and listening on port :8080...")
-	godotenv.Load(".env")
+	err := godotenv.Load(".env")
 
 	//load port
 	port := os.Getenv("PORT")
+	if err != nil {
+		log.Fatal(err)
+	}
 	if port == "" {
-		log.Fatal("Failed to load port number")
+		log.Fatalf("Failed to load port number %v", port)
 	}
 
 	db_url := os.Getenv("DB_URL")
@@ -42,9 +45,23 @@ func main() {
 
 	router := chi.NewRouter()
 	router.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{},
+		AllowedOrigins: []string{
+			"http://localhost:5173",
+		},
+		AllowedMethods: []string{
+			"GET",
+			"POST",
+			"PUT",
+			"DELETE",
+			"OPTIONS",
+		},
+		AllowedHeaders: []string{
+			"Accept",
+			"Authorization",
+			"Content-Type",
+			"X-CSRF-Token",
+			"X-API-Key",
+		},
 		ExposedHeaders:   []string{},
 		AllowCredentials: false,
 		MaxAge:           300,
