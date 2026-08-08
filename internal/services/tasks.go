@@ -211,6 +211,10 @@ func ApplyForTasks(api *config.ApiConfig, task models.TaskApplication) (models.T
 
 }
 
-// func TasksRandomly(api *config.ApiConfig, task models.TaskApplication){
-
-// }
+func TasksFeeds(api *config.ApiConfig) ([]models.Taskfeed, error) {
+	getTask, err := repository.TaskFeeds(api)
+	if err != nil {
+		return []models.Taskfeed{}, fmt.Errorf("failed to apply for task: %w", err)
+	}
+	return getTask, nil
+}

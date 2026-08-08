@@ -220,3 +220,21 @@ func DeleteTask(api *config.ApiConfig) http.HandlerFunc {
 		)
 	}
 }
+
+func Taskfeed(api *config.ApiConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// claims := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
+		feeds, err := services.TasksFeeds(api)
+		if err != nil {
+			RespondWithJson(w, http.StatusUnauthorized, false, err.Error(), nil)
+			return
+		}
+		RespondWithJson(
+			w,
+			http.StatusOK,
+			true,
+			"Task Fetched",
+			feeds,
+		)
+	}
+}

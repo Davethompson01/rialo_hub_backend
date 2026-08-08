@@ -21,5 +21,6 @@ func Task(r chi.Router, api *config.ApiConfig) {
 		r.Get("/getMyApplications", handler.GetMyApplications(api))
 		r.Post("/cancel", handler.CancelApplication(api))
 		r.Post("/delete", handler.DeleteTask(api))
+		r.Get("/taskfeeds", handler.Taskfeed(api))
 	})
 }

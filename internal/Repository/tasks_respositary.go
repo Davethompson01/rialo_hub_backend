@@ -437,42 +437,38 @@ func CheckTasksExist(api *config.ApiConfig, tasks_id int) bool {
 }
 
 func TaskFeeds(api *config.ApiConfig) ([]models.Taskfeed, error) {
-	query := `
-		SELECT
-    tk.task_id,
-    tk.user_id,
-    u.username,
-    u.profile_picture,
-    tk.title,
-    tk.description,
-    tk.reward,
-    tk.role,
-    tk.status,
-    tk.deadline,
-    COUNT(ta.task_application_id) AS applicant_count
-FROM task tk
-
-JOIN users u
-ON tk.user_id = u.user_id
-
-LEFT JOIN task_application ta
-ON tk.task_id = ta.task_id
-
-GROUP BY
-    tk.task_id,
-    tk.user_id,
-    u.username,
-    u.profile_picture,
-    tk.title,
-    tk.description,
-    tk.reward,
-    tk.role,
-    tk.status,
-    tk.deadline
-
-ORDER BY tk.created_at DESC;
-	`
-
+query := `
+	SELECT
+		tk.task_id,
+		tk.user_id,
+		u.username,
+		COALESCE(u.profile_pics, '') AS profile_pics,
+		tk.title,
+		tk.description,
+		tk.reward,
+		u.role,
+		tk.status,
+		tk.deadline,
+		COUNT(ta.task_application_id) AS applicant_count
+	FROM tasks tk
+	JOIN users u
+		ON tk.user_id = u.user_id
+	LEFT JOIN task_application ta
+		ON tk.task_id = ta.task_id
+	GROUP BY
+		tk.task_id,
+		tk.user_id,
+		u.username,
+		u.profile_pics,
+		tk.title,
+		tk.description,
+		tk.reward,
+		u.role,
+		tk.status,
+		tk.deadline,
+		tk.created_at
+	ORDER BY tk.created_at DESC;
+`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
