@@ -16,5 +16,8 @@ func CreateUser(r chi.Router, api *config.ApiConfig) {
 
 		//user login
 		r.Post("/login", handler.Login(api))
+
+		// private route
+		r.Get("/me", handler.GetMe(api))
 	})
 }

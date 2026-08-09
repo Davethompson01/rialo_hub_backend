@@ -73,27 +73,29 @@ func Login(apicfg *config.ApiConfig) http.HandlerFunc {
 
 }
 
-func GetMe(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("refresh_token")
-	if err != nil {
-		RespondWithJson(w, http.StatusUnauthorized, false, "Not authenticated", nil)
-		return
-	}
+func GetMe(api *config.ApiConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("refresh_token")
+		if err != nil {
+			RespondWithJson(w, http.StatusUnauthorized, false, "Not authenticated", nil)
+			return
+		}
 
-	claims, err := auth.ValidateToken(cookie.Value)
-	if err != nil {
-		RespondWithJson(w, http.StatusUnauthorized, false, "Invalid or expired token", nil)
-		return
-	}
+		claims, err := auth.ValidateToken(cookie.Value)
+		if err != nil {
+			RespondWithJson(w, http.StatusUnauthorized, false, "Invalid or expired token", nil)
+			return
+		}
 
-	RespondWithJson(
-		w,
-		http.StatusOK,
-		true,
-		"User fetched",
-		map[string]interface{}{
-			"id":   claims.UserID,
-			"role": claims.Role,
-		},
-	)
+		RespondWithJson(
+			w,
+			http.StatusOK,
+			true,
+			"User fetched",
+			map[string]interface{}{
+				"id":   claims.UserID,
+				"role": claims.Role,
+			},
+		)
+	}
 }
