@@ -3,6 +3,7 @@ package auth
 import (
 	"fmt"
 	"log"
+	
 	"os"
 	"strconv"
 	"time"
@@ -15,6 +16,7 @@ type Claims struct {
 	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
+
 
 func secretKey() []byte {
 	loadSecret := os.Getenv("JWT_SECRET_KEY")
@@ -88,3 +90,5 @@ func RefreshToken(userID int, role string) (string, error) {
 
 	return token.SignedString(secretKey())
 }
+
+

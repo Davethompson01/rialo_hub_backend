@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Davethompson01/rialo_hub_backend/config"
+	auth "github.com/Davethompson01/rialo_hub_backend/internal/Auth"
 	"github.com/Davethompson01/rialo_hub_backend/internal/models"
 	"github.com/Davethompson01/rialo_hub_backend/internal/services"
 )
@@ -70,4 +71,29 @@ func Login(apicfg *config.ApiConfig) http.HandlerFunc {
 		)
 	}
 
+}
+
+func GetMe(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("refresh_token")
+	if err != nil {
+		RespondWithJson(w, http.StatusUnauthorized, false, "Not authenticated", nil)
+		return
+	}
+
+	claims, err := auth.ValidateToken(cookie.Value)
+	if err != nil {
+		RespondWithJson(w, http.StatusUnauthorized, false, "Invalid or expired token", nil)
+		return
+	}
+
+	RespondWithJson(
+		w,
+		http.StatusOK,
+		true,
+		"User fetched",
+		map[string]interface{}{
+			"id":   claims.UserID,
+			"role": claims.Role,
+		},
+	)
 }
