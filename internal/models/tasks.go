@@ -66,6 +66,5 @@ type Taskfeed struct {
 	Role           string `json:"role"`
 	Status         string `json:"status"`
 	Deadline       string `json:"deadline"`
-	Skills         string `json:"skills"`
 	ApplicantCount int    `json:"applicant_count"`
 }

@@ -450,7 +450,6 @@ func TaskFeeds(api *config.ApiConfig) ([]models.Taskfeed, error) {
 		u.role,
 		tk.status,
 		tk.deadline,
-		COALESCE(tk.skills, '') AS skills,
 		COUNT(ta.task_application_id) AS applicant_count
 	FROM tasks tk
 	JOIN users u
@@ -468,11 +467,9 @@ func TaskFeeds(api *config.ApiConfig) ([]models.Taskfeed, error) {
 		u.role,
 		tk.status,
 		tk.deadline,
-		tk.skills,
 		tk.created_at
 	ORDER BY tk.created_at DESC;
 `
-
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -485,29 +482,29 @@ func TaskFeeds(api *config.ApiConfig) ([]models.Taskfeed, error) {
 	var tasks []models.Taskfeed
 
 	for rows.Next() {
-		var task models.Taskfeed
+	var task models.Taskfeed
 
 	err := rows.Scan(
-	&task.ID,
-	&task.UserID,
-	&task.EmployerID,
-	&task.Username,
-	&task.ProfilePicture,
-	&task.Title,
-	&task.Description,
-	&task.Reward,
-	&task.Role,
-	&task.Status,
-	&task.Deadline,
-	&task.Skills,
-	&task.ApplicantCount,
-)
-		if err != nil {
-			return nil, err
-		}
+		&task.ID,
+		&task.UserID,
+		&task.EmployerID,
+		&task.Username,
+		&task.ProfilePicture,
+		&task.Title,
+		&task.Description,
+		&task.Reward,
+		&task.Role,
+		&task.Status,
+		&task.Deadline,
+		&task.ApplicantCount,
+	)
 
-		tasks = append(tasks, task)
+	if err != nil {
+		return nil, err
 	}
+
+	tasks = append(tasks, task)
+}
 
 	if err := rows.Err(); err != nil {
 		return nil, err
