@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	middleware "github.com/Davethompson01/rialo_hub_backend/Middleware"
 	"github.com/Davethompson01/rialo_hub_backend/config"
 	auth "github.com/Davethompson01/rialo_hub_backend/internal/Auth"
 	"github.com/Davethompson01/rialo_hub_backend/internal/models"
@@ -75,17 +76,8 @@ func Login(apicfg *config.ApiConfig) http.HandlerFunc {
 
 func GetMe(api *config.ApiConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("access_token")
-		if err != nil {
-			RespondWithJson(w, http.StatusUnauthorized, false, "Not authenticated", nil)
-			return
-		}
 
-		claims, err := auth.ValidateToken(cookie.Value)
-		if err != nil {
-			RespondWithJson(w, http.StatusUnauthorized, false, "Invalid or expired token", nil)
-			return
-		}
+		claims := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
 
 		RespondWithJson(
 			w,
