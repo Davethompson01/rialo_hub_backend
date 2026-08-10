@@ -372,11 +372,11 @@ func GetMyApplications(api *config.ApiConfig, employeeID int) ([]models.Applicat
 
 	query := `
 		SELECT
-			ta.application_id,
+			ta.task_application_id,
 			ta.task_id,
 			u.user_id,
 			u.username,
-			u.profile_pics,
+			COALESCE(u.profile_pics, '') AS profile_pics,
 			u.reputation,
 			ta.status
 		FROM task_application ta
@@ -437,7 +437,7 @@ func CheckTasksExist(api *config.ApiConfig, tasks_id int) bool {
 }
 
 func TaskFeeds(api *config.ApiConfig) ([]models.Taskfeed, error) {
-query := `
+	query := `
 	SELECT
 		tk.task_id,
 		tk.user_id,
