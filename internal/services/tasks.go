@@ -177,22 +177,21 @@ func CancelApplication(api *config.ApiConfig, applicationID, employeeID int) (st
 // 	return "Task closed successfully", nil
 // }
 
-func DeleteTask(api *config.ApiConfig, taskID, ownerID int) (string, error) {
-
+func DeleteTask(api *config.ApiConfig, taskID, ownerID int) error {
 	ownsTask, err := repository.IsTaskOwner(api, taskID, ownerID)
 	if err != nil {
-		return "", err
+		return fmt.Errorf("failed to verify task ownership: %w", err)
 	}
 
 	if !ownsTask {
-		return "", errors.New("you are not allowed to delete this task")
+		return errors.New("you are not allowed to delete this task")
 	}
 
 	if err := repository.DeleteTask(api, taskID); err != nil {
-		return "", err
+		return fmt.Errorf("failed to delete task: %w", err)
 	}
 
-	return "Task deleted successfully", nil
+	return nil
 }
 
 func ApplyForTasks(api *config.ApiConfig, task models.TaskApplication) (models.TaskApplication, error) {

@@ -303,7 +303,7 @@ func DeleteTask(api *config.ApiConfig, taskID int) error {
 
 	query := `
 		DELETE FROM tasks
-		WHERE id = $1
+		WHERE task_id = $1
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
