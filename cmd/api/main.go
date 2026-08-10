@@ -63,7 +63,7 @@ func main() {
 			"X-API-Key",
 		},
 		ExposedHeaders:   []string{},
-		AllowCredentials: false,
+		AllowCredentials: true,
 		MaxAge:           300,
 	}))
 

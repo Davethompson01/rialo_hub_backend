@@ -149,28 +149,30 @@ func GetTaskApplications(api *config.ApiConfig) http.HandlerFunc {
 }
 
 func GetMyApplications(api *config.ApiConfig) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var taskStatus models.ApplicationResponse
-		if err := json.NewDecoder(r.Body).Decode(&taskStatus); err != nil {
-			RespondWithJson(w, http.StatusBadRequest, false, "Invalid request body", nil)
-			return
-		}
-		claims := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
+    return func(w http.ResponseWriter, r *http.Request) {
 
-		GetMyApplications, err := services.GetMyApplications(api, claims.UserID)
-		if err != nil {
-			RespondWithJson(w, http.StatusUnauthorized, false, err.Error(), nil)
-			return
-		}
-		RespondWithJson(
-			w,
-			201,
-			true,
-			"Applicants for Tasks Fetched Successfully",
-			GetMyApplications,
-		)
+        claims := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
 
-	}
+        applications, err := services.GetMyApplications(api, claims.UserID)
+        if err != nil {
+            RespondWithJson(
+                w,
+                http.StatusUnauthorized,
+                false,
+                err.Error(),
+                nil,
+            )
+            return
+        }
+
+        RespondWithJson(
+            w,
+            http.StatusOK,
+            true,
+            "Applicants for Tasks Fetched Successfully",
+            applications,
+        )
+    }
 }
 
 func CancelApplication(api *config.ApiConfig) http.HandlerFunc {
