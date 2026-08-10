@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -44,32 +43,49 @@ func CreateTasks(api *config.ApiConfig) http.HandlerFunc {
 func ApplyForTasks(api *config.ApiConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var apply models.TaskApplication
+
 		if err := json.NewDecoder(r.Body).Decode(&apply); err != nil {
-			RespondWithJson(w, http.StatusBadRequest, false, "Invalid request body", nil)
+			RespondWithJson(
+				w,
+				http.StatusBadRequest,
+				false,
+				"Invalid request body",
+				nil,
+			)
 			return
 		}
 
 		claims := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
+
+		// Get employee identity from JWT
 		apply.Employee_id = claims.UserID
-		fmt.Println(apply.Employee_id)
+
+		// Get employee role from JWT
+		apply.Skills = claims.Role
+
 		apply.Status = "Ongoing"
 
 		tasksApplication, err := services.ApplyForTasks(api, apply)
 		if err != nil {
-			RespondWithJson(w, 400, false, err.Error(), nil)
+			RespondWithJson(
+				w,
+				http.StatusBadRequest,
+				false,
+				err.Error(),
+				nil,
+			)
 			return
 		}
 
 		RespondWithJson(
 			w,
-			201,
+			http.StatusCreated,
 			true,
 			"Application Sent Successfully",
 			tasksApplication,
 		)
 	}
 }
-
 func AcceptEmployee(api *config.ApiConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var apply models.TaskApplication
@@ -149,30 +165,30 @@ func GetTaskApplications(api *config.ApiConfig) http.HandlerFunc {
 }
 
 func GetMyApplications(api *config.ApiConfig) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 
-        claims := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
+		claims := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
 
-        applications, err := services.GetMyApplications(api, claims.UserID)
-        if err != nil {
-            RespondWithJson(
-                w,
-                http.StatusUnauthorized,
-                false,
-                err.Error(),
-                nil,
-            )
-            return
-        }
+		applications, err := services.GetMyApplications(api, claims.UserID)
+		if err != nil {
+			RespondWithJson(
+				w,
+				http.StatusUnauthorized,
+				false,
+				err.Error(),
+				nil,
+			)
+			return
+		}
 
-        RespondWithJson(
-            w,
-            http.StatusOK,
-            true,
-            "Applicants for Tasks Fetched Successfully",
-            applications,
-        )
-    }
+		RespondWithJson(
+			w,
+			http.StatusOK,
+			true,
+			"Applicants for Tasks Fetched Successfully",
+			applications,
+		)
+	}
 }
 
 func CancelApplication(api *config.ApiConfig) http.HandlerFunc {
