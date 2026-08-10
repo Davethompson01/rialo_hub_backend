@@ -49,7 +49,7 @@ func Login(apicfg *config.ApiConfig) http.HandlerFunc {
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
-			SameSite: http.SameSiteLaxMode,
+			SameSite: http.SameSiteNoneMode,
 			MaxAge:   15 * 60,
 		})
 
@@ -59,7 +59,7 @@ func Login(apicfg *config.ApiConfig) http.HandlerFunc {
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   true,
-			SameSite: http.SameSiteLaxMode,
+			SameSite: http.SameSiteNoneMode,
 			MaxAge:   7 * 24 * 60 * 60,
 		})
 		RespondWithJson(
@@ -75,7 +75,7 @@ func Login(apicfg *config.ApiConfig) http.HandlerFunc {
 
 func GetMe(api *config.ApiConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("refresh_token")
+		cookie, err := r.Cookie("access_token")
 		if err != nil {
 			RespondWithJson(w, http.StatusUnauthorized, false, "Not authenticated", nil)
 			return
