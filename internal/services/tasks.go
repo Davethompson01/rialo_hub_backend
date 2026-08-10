@@ -1,6 +1,7 @@
 package services
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 
@@ -95,18 +96,42 @@ func RejectEmployee(api *config.ApiConfig, applicationID, taskID, employerID int
 	return "Applicant rejected successfully", nil
 }
 
-func GetTaskApplications(api *config.ApiConfig, taskID, employerID int) ([]models.ApplicationResponse, error) {
+func GetTaskApplications(
+	api *config.ApiConfig,
+	taskID int,
+	userID int,
+) ([]models.ApplicationResponse, error) {
 
-	ownsTask, err := repository.IsTaskOwner(api, taskID, employerID)
+	ownerID, err := repository.GetTaskOwner(api, taskID)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("task not found")
+		}
+
+		return nil, fmt.Errorf(
+			"failed to get task owner: %w",
+			err,
+		)
 	}
 
-	if !ownsTask {
-		return nil, errors.New("you are not authorized")
+	if ownerID != userID {
+		return nil, fmt.Errorf(
+			"you are not authorized to view applications for this task",
+		)
 	}
 
-	return repository.GetTaskApplications(api, taskID)
+	applications, err := repository.GetTaskApplications(
+		api,
+		taskID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to get task applications: %w",
+			err,
+		)
+	}
+
+	return applications, nil
 }
 
 func GetMyApplications(api *config.ApiConfig, employeeID int) ([]models.ApplicationResponse, error) {

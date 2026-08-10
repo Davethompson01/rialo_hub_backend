@@ -313,7 +313,10 @@ func DeleteTask(api *config.ApiConfig, taskID int) error {
 	return err
 }
 
-func GetTaskApplications(api *config.ApiConfig, taskID int) ([]models.ApplicationResponse, error) {
+func GetTaskApplications(
+	api *config.ApiConfig,
+	taskID int,
+) ([]models.ApplicationResponse, error) {
 
 	query := `
 		SELECT
@@ -331,16 +334,23 @@ func GetTaskApplications(api *config.ApiConfig, taskID int) ([]models.Applicatio
 		ORDER BY ta.applied_at ASC
 	`
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		3*time.Second,
+	)
 	defer cancel()
 
-	rows, err := api.DB.QueryContext(ctx, query, taskID)
+	rows, err := api.DB.QueryContext(
+		ctx,
+		query,
+		taskID,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var applications []models.ApplicationResponse
+	applications := make([]models.ApplicationResponse, 0)
 
 	for rows.Next() {
 		var application models.ApplicationResponse
