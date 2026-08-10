@@ -55,15 +55,17 @@ type TaskResponse struct {
 
 
 type Taskfeed struct {
-	ID               int       `json:"id"`
-	UserID           int       `json:"user_id"`
-	Username         string    `json:"username"`
-	ProfilePicture   string    `json:"profile_picture"`
-	Title            string    `json:"title"`
-	Description      string    `json:"description"`
-	Reward           float64   `json:"reward"`
-	Role             string    `json:"role"`
-	Status           string    `json:"status"`
-	Deadline         time.Time `json:"deadline"`
-	ApplicantCount   int       `json:"applicant_count"`
+	ID             int    `json:"id"`
+	UserID         int    `json:"user_id"`
+	EmployerID     int    `json:"employer_id"`
+	Username       string `json:"username"`
+	ProfilePicture string `json:"profile_picture"`
+	Title          string `json:"title"`
+	Description    string `json:"description"`
+	Reward         int    `json:"reward"`
+	Role           string `json:"role"`
+	Status         string `json:"status"`
+	Deadline       string `json:"deadline"`
+	Skills         string `json:"skills"`
+	ApplicantCount int    `json:"applicant_count"`
 }

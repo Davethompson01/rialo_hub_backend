@@ -441,6 +441,7 @@ func TaskFeeds(api *config.ApiConfig) ([]models.Taskfeed, error) {
 	SELECT
 		tk.task_id,
 		tk.user_id,
+		tk.user_id AS employer_id,
 		u.username,
 		COALESCE(u.profile_pics, '') AS profile_pics,
 		tk.title,
@@ -449,6 +450,7 @@ func TaskFeeds(api *config.ApiConfig) ([]models.Taskfeed, error) {
 		u.role,
 		tk.status,
 		tk.deadline,
+		COALESCE(tk.skills, '') AS skills,
 		COUNT(ta.task_application_id) AS applicant_count
 	FROM tasks tk
 	JOIN users u
@@ -466,9 +468,11 @@ func TaskFeeds(api *config.ApiConfig) ([]models.Taskfeed, error) {
 		u.role,
 		tk.status,
 		tk.deadline,
+		tk.skills,
 		tk.created_at
 	ORDER BY tk.created_at DESC;
 `
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -483,19 +487,21 @@ func TaskFeeds(api *config.ApiConfig) ([]models.Taskfeed, error) {
 	for rows.Next() {
 		var task models.Taskfeed
 
-		err := rows.Scan(
-			&task.ID,
-			&task.UserID,
-			&task.Username,
-			&task.ProfilePicture,
-			&task.Title,
-			&task.Description,
-			&task.Reward,
-			&task.Role,
-			&task.Status,
-			&task.Deadline,
-			&task.ApplicantCount,
-		)
+	err := rows.Scan(
+	&task.ID,
+	&task.UserID,
+	&task.EmployerID,
+	&task.Username,
+	&task.ProfilePicture,
+	&task.Title,
+	&task.Description,
+	&task.Reward,
+	&task.Role,
+	&task.Status,
+	&task.Deadline,
+	&task.Skills,
+	&task.ApplicantCount,
+)
 		if err != nil {
 			return nil, err
 		}
