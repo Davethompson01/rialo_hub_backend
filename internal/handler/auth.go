@@ -77,7 +77,17 @@ func Login(apicfg *config.ApiConfig) http.HandlerFunc {
 func GetMe(api *config.ApiConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		claims := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
+		claims, ok := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
+		if !ok || claims == nil {
+			RespondWithJson(
+				w,
+				http.StatusUnauthorized,
+				false,
+				"Not authenticated",
+				nil,
+			)
+			return
+		}
 
 		RespondWithJson(
 			w,

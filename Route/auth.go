@@ -18,6 +18,9 @@ func CreateUser(r chi.Router, api *config.ApiConfig) {
 		r.Post("/login", handler.Login(api))
 
 		// private route
-		r.Get("/me", handler.GetMe(api))
+		 r.With(middleware.JWTMiddleware).Get(
+        "/me",
+        handler.GetMe(api),
+    )
 	})
 }
