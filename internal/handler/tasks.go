@@ -235,9 +235,9 @@ func DeleteTask(api *config.ApiConfig) http.HandlerFunc {
 		}
 
 		claims := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
-		delete, err := services.DeleteTask(api, apply.Task_id, claims.UserID)
-		if err != nil {
-			RespondWithJson(w, http.StatusUnauthorized, false, err.Error(), nil)
+		delete := services.DeleteTask(api, apply.Task_id, claims.UserID)
+		if delete != nil {
+			RespondWithJson(w, http.StatusUnauthorized, false, delete.Error(), nil)
 			return
 		}
 		RespondWithJson(
