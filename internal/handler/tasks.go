@@ -55,7 +55,18 @@ func ApplyForTasks(api *config.ApiConfig) http.HandlerFunc {
 			return
 		}
 
-		claims := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
+		// claims := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
+		claims, ok := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
+		if !ok || claims == nil {
+			RespondWithJson(
+				w,
+				http.StatusUnauthorized,
+				false,
+				"Unauthorized",
+				nil,
+			)
+			return
+		}
 
 		// Get employee identity from JWT
 		apply.Employee_id = claims.UserID

@@ -171,45 +171,112 @@ func DeleteTask(api *config.ApiConfig, taskID, ownerID int) (string, error) {
 }
 
 func ApplyForTasks(api *config.ApiConfig, task models.TaskApplication) (models.TaskApplication, error) {
-	checkTasksExist := repository.CheckTasksExist(api, task.Task_id)
-	fmt.Println(checkTasksExist, task.Task_id)
-	if !checkTasksExist {
-		return models.TaskApplication{}, fmt.Errorf("Task Not Found %v", checkTasksExist)
+	// 1. Check if task exists
+	taskExists := repository.CheckTasksExist(api, task.Task_id)
+
+	if !taskExists {
+		return models.TaskApplication{}, fmt.Errorf("task not found")
 	}
 
-	checkTaskOwner, err := repository.IsTaskOwner(api, task.Task_id, task.Employer_id)
+	// 2. Get the task owner from the database
+	taskOwnerID, err := repository.GetTaskOwner(api, task.Task_id)
 	if err != nil {
-		return models.TaskApplication{}, err
+		return models.TaskApplication{}, fmt.Errorf("failed to get task owner: %w", err)
 	}
 
-	if checkTaskOwner {
+	// 3. Prevent the task owner from applying to their own task
+	if taskOwnerID == task.Employee_id {
 		return models.TaskApplication{}, fmt.Errorf("you created this task")
 	}
 
-	checkIsTaskAlreadyAssigned, err := repository.IsTaskAlreadyAssigned(api, task.Task_id)
+	// 4. Check if task has already been assigned
+	taskAlreadyAssigned, err := repository.IsTaskAlreadyAssigned(api, task.Task_id)
 	if err != nil {
-		return models.TaskApplication{}, err
-	}
-	applicantAppliedAlready, err := repository.HasEmployeeApplied(api, task.Task_id, task.Employee_id)
-	if err != nil {
-		return models.TaskApplication{}, err
-	}
-	if applicantAppliedAlready {
-		return models.TaskApplication{}, fmt.Errorf("you applied to this task already")
+		return models.TaskApplication{}, fmt.Errorf(
+			"failed to check task assignment: %w",
+			err,
+		)
 	}
 
-	if checkIsTaskAlreadyAssigned {
+	if taskAlreadyAssigned {
 		return models.TaskApplication{}, fmt.Errorf("task has already been assigned")
 	}
 
+	// 5. Check if employee has already applied
+	alreadyApplied, err := repository.HasEmployeeApplied(
+		api,
+		task.Task_id,
+		task.Employee_id,
+	)
+	if err != nil {
+		return models.TaskApplication{}, fmt.Errorf(
+			"failed to check previous application: %w",
+			err,
+		)
+	}
+
+	if alreadyApplied {
+		return models.TaskApplication{}, fmt.Errorf("you already applied to this task")
+	}
+
+	// 6. Set the actual task owner from the database
+	task.Employer_id = taskOwnerID
+
+	// 7. Application should start as Pending
+	task.Status = "Ongoing"
+
+	// 8. Create application
 	createdApplication, err := repository.TaskApplication(api, task)
 	if err != nil {
-		return models.TaskApplication{}, fmt.Errorf("failed to apply for task: %w", err)
+		return models.TaskApplication{}, fmt.Errorf(
+			"failed to apply for task: %w",
+			err,
+		)
 	}
 
 	return createdApplication, nil
-
 }
+
+// func ApplyForTasks(api *config.ApiConfig, task models.TaskApplication) (models.TaskApplication, error) {
+// 	checkTasksExist := repository.CheckTasksExist(api, task.Task_id)
+// 	fmt.Println(checkTasksExist, task.Task_id)
+// 	if !checkTasksExist {
+// 		return models.TaskApplication{}, fmt.Errorf("Task Not Found %v", checkTasksExist)
+// 	}
+
+// 	checkTaskOwner, err := repository.IsTaskOwner(api, task.Task_id, task.Employer_id)
+// 	if err != nil {
+// 		return models.TaskApplication{}, err
+// 	}
+
+// 	if checkTaskOwner {
+// 		return models.TaskApplication{}, fmt.Errorf("you created this task")
+// 	}
+
+// 	checkIsTaskAlreadyAssigned, err := repository.IsTaskAlreadyAssigned(api, task.Task_id)
+// 	if err != nil {
+// 		return models.TaskApplication{}, err
+// 	}
+// 	applicantAppliedAlready, err := repository.HasEmployeeApplied(api, task.Task_id, task.Employee_id)
+// 	if err != nil {
+// 		return models.TaskApplication{}, err
+// 	}
+// 	if applicantAppliedAlready {
+// 		return models.TaskApplication{}, fmt.Errorf("you applied to this task already")
+// 	}
+
+// 	if checkIsTaskAlreadyAssigned {
+// 		return models.TaskApplication{}, fmt.Errorf("task has already been assigned")
+// 	}
+
+// 	createdApplication, err := repository.TaskApplication(api, task)
+// 	if err != nil {
+// 		return models.TaskApplication{}, fmt.Errorf("failed to apply for task: %w", err)
+// 	}
+
+// 	return createdApplication, nil
+
+// }
 
 func TasksFeeds(api *config.ApiConfig) ([]models.Taskfeed, error) {
 	getTask, err := repository.TaskFeeds(api)

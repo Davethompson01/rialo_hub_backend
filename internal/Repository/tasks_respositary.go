@@ -512,3 +512,29 @@ func TaskFeeds(api *config.ApiConfig) ([]models.Taskfeed, error) {
 
 	return tasks, nil
 }
+
+
+func GetTaskOwner(api *config.ApiConfig, taskID int) (int, error) {
+	query := `
+		SELECT user_id
+		FROM tasks
+		WHERE task_id = $1
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var employerID int
+
+	err := api.DB.QueryRowContext(
+		ctx,
+		query,
+		taskID,
+	).Scan(&employerID)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return employerID, nil
+}
