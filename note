@@ -1,0 +1,11 @@
+ALTER TABLE task_application
+DROP CONSTRAINT task_application_task_id_fkey;
+
+
+ALTER TABLE task_application
+ADD CONSTRAINT task_application_task_id_fkey
+FOREIGN KEY (task_id)
+REFERENCES tasks(task_id)
+ON DELETE CASCADE;
+
+

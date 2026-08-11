@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"time"
 
@@ -300,17 +301,32 @@ func RejectPendingApplications(api *config.ApiConfig, taskID int) error {
 }
 
 func DeleteTask(api *config.ApiConfig, taskID int) error {
-
 	query := `
 		DELETE FROM tasks
 		WHERE task_id = $1
 	`
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		3*time.Second,
+	)
 	defer cancel()
 
-	_, err := api.DB.ExecContext(ctx, query, taskID)
-	return err
+	result, err := api.DB.ExecContext(ctx, query, taskID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("task not found")
+	}
+
+	return nil
 }
 
 func GetTaskApplications(
@@ -492,29 +508,29 @@ func TaskFeeds(api *config.ApiConfig) ([]models.Taskfeed, error) {
 	var tasks []models.Taskfeed
 
 	for rows.Next() {
-	var task models.Taskfeed
+		var task models.Taskfeed
 
-	err := rows.Scan(
-		&task.ID,
-		&task.UserID,
-		&task.EmployerID,
-		&task.Username,
-		&task.ProfilePicture,
-		&task.Title,
-		&task.Description,
-		&task.Reward,
-		&task.Role,
-		&task.Status,
-		&task.Deadline,
-		&task.ApplicantCount,
-	)
+		err := rows.Scan(
+			&task.ID,
+			&task.UserID,
+			&task.EmployerID,
+			&task.Username,
+			&task.ProfilePicture,
+			&task.Title,
+			&task.Description,
+			&task.Reward,
+			&task.Role,
+			&task.Status,
+			&task.Deadline,
+			&task.ApplicantCount,
+		)
 
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
+
+		tasks = append(tasks, task)
 	}
-
-	tasks = append(tasks, task)
-}
 
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -522,7 +538,6 @@ func TaskFeeds(api *config.ApiConfig) ([]models.Taskfeed, error) {
 
 	return tasks, nil
 }
-
 
 func GetTaskOwner(api *config.ApiConfig, taskID int) (int, error) {
 	query := `
