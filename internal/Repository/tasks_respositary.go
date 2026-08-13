@@ -214,7 +214,7 @@ func IsApplicationOwner(api *config.ApiConfig, applicationID, employeeID int) (b
 		SELECT EXISTS(
 			SELECT 1
 			FROM task_application
-			WHERE id = $1
+			WHERE task_application_id = $1
 			AND employee_id = $2
 		)
 	`
@@ -259,7 +259,7 @@ func DeleteApplication(api *config.ApiConfig, applicationID int) error {
 
 	query := `
 		DELETE FROM task_application
-		WHERE id = $1
+		WHERE task_application_id = $1
 	`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
