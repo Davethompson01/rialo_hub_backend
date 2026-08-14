@@ -7,6 +7,7 @@ import (
 	middleware "github.com/Davethompson01/rialo_hub_backend/Middleware"
 	"github.com/Davethompson01/rialo_hub_backend/config"
 	auth "github.com/Davethompson01/rialo_hub_backend/internal/Auth"
+	repository "github.com/Davethompson01/rialo_hub_backend/internal/Repository"
 	"github.com/Davethompson01/rialo_hub_backend/internal/models"
 	"github.com/Davethompson01/rialo_hub_backend/internal/services"
 )
@@ -51,7 +52,7 @@ func Login(apicfg *config.ApiConfig) http.HandlerFunc {
 			HttpOnly: true,
 			Secure:   true,
 			SameSite: http.SameSiteNoneMode,
-			MaxAge:   15 * 60,
+			MaxAge:   7 * 24 * 60 * 60,
 		})
 
 		http.SetCookie(w, &http.Cookie{
@@ -98,6 +99,42 @@ func GetMe(api *config.ApiConfig) http.HandlerFunc {
 				"id":   claims.UserID,
 				"role": claims.Role,
 			},
+		)
+	}
+}
+
+func UserProfile(api *config.ApiConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		claims, ok := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
+		if !ok {
+			RespondWithJson(
+				w,
+				http.StatusUnauthorized,
+				false,
+				"Unauthorized",
+				nil,
+			)
+			return
+		}
+
+		selectProfile, err := repository.SelectUserByID(api, claims.UserID)
+		if err != nil {
+			RespondWithJson(
+				w,
+				http.StatusInternalServerError,
+				false,
+				err.Error(),
+				nil,
+			)
+			return
+		}
+
+		RespondWithJson(
+			w,
+			http.StatusOK,
+			true,
+			"User profile retrieved successfully",
+			selectProfile,
 		)
 	}
 }

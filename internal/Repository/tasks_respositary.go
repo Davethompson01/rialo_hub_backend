@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"time"
@@ -301,6 +302,7 @@ func RejectPendingApplications(api *config.ApiConfig, taskID int) error {
 }
 
 func DeleteTask(api *config.ApiConfig, taskID int) error {
+
 	query := `
 		DELETE FROM tasks
 		WHERE task_id = $1
@@ -324,6 +326,50 @@ func DeleteTask(api *config.ApiConfig, taskID int) error {
 
 	if rowsAffected == 0 {
 		return fmt.Errorf("task not found")
+	}
+
+	return nil
+}
+
+func DeleteTaskWithApplications(api *config.ApiConfig, taskID int) error {
+	tx, err := api.DB.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	defer tx.Rollback()
+
+	// Delete applications first because they reference the task.
+	_, err = tx.Exec(`
+		DELETE FROM task_application
+		WHERE task_id = $1
+	`, taskID)
+	if err != nil {
+		return fmt.Errorf("failed to delete task applications: %w", err)
+	}
+
+	// Then delete the task.
+	result, err := tx.Exec(`
+		DELETE FROM tasks
+		WHERE task_id = $1
+	`, taskID)
+	if err != nil {
+		return fmt.Errorf("failed to delete task: %w", err)
+	}
+
+	// Optional but useful: make sure a task was actually deleted.
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to check deleted task: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return errors.New("task not found")
+	}
+
+	// Everything succeeded.
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return nil

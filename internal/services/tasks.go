@@ -187,7 +187,7 @@ func DeleteTask(api *config.ApiConfig, taskID, ownerID int) error {
 		return errors.New("you are not allowed to delete this task")
 	}
 
-	if err := repository.DeleteTask(api, taskID); err != nil {
+	if err := repository.DeleteTaskWithApplications(api, taskID); err != nil {
 		return fmt.Errorf("failed to delete task: %w", err)
 	}
 
