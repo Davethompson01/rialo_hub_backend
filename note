@@ -1,11 +1,65 @@
-ALTER TABLE task_application
-DROP CONSTRAINT task_application_task_id_fkey;
+-- ALTER TABLE task_application
+-- DROP CONSTRAINT task_application_task_id_fkey;
 
 
-ALTER TABLE task_application
-ADD CONSTRAINT task_application_task_id_fkey
-FOREIGN KEY (task_id)
-REFERENCES tasks(task_id)
-ON DELETE CASCADE;
+-- ALTER TABLE task_application
+-- ADD CONSTRAINT task_application_task_id_fkey
+-- FOREIGN KEY (task_id)
+-- REFERENCES tasks(task_id)
+-- ON DELETE CASCADE;
 
 
+CREATE TABLE socialposts (
+    post_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    likes INT NOT NULL DEFAULT 0,
+    comments INT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT socialposts_user_id_fkey
+        FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE
+);
+
+CREATE TABLE likes (
+    like_id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    post_id INT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT likes_user_id_fkey
+        FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT likes_post_id_fkey
+        FOREIGN KEY (post_id)
+        REFERENCES socialposts(post_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT unique_user_post_like
+        UNIQUE (user_id, post_id)
+);
+
+CREATE TABLE comments (
+    comment_id SERIAL PRIMARY KEY,
+    post_id INT NOT NULL,
+    user_id INT NOT NULL,
+    comment TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT comments_post_id_fkey
+        FOREIGN KEY (post_id)
+        REFERENCES socialposts(post_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT comments_user_id_fkey
+        FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE
+);

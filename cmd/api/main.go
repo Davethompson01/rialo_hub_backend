@@ -70,6 +70,8 @@ func main() {
 	routes := chi.NewRouter()
 	route.CreateUser(routes, &config)
 	route.Task(routes, &config)
+	route.Post(routes, &config)
+	route.Dashboard(routes, &config)
 	router.Mount("/v1", routes)
 	server := &http.Server{
 		Handler: router,

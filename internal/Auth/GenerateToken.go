@@ -3,7 +3,7 @@ package auth
 import (
 	"fmt"
 	"log"
-	
+
 	"os"
 	"strconv"
 	"time"
@@ -16,7 +16,6 @@ type Claims struct {
 	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
-
 
 func secretKey() []byte {
 	loadSecret := os.Getenv("JWT_SECRET_KEY")
@@ -37,7 +36,7 @@ func GenerateToken(userID int, role string) (string, error) {
 			Subject:   strconv.Itoa(userID),
 			Issuer:    "rialo",
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * 24 * time.Minute)),
 		},
 	}
 
@@ -90,5 +89,3 @@ func RefreshToken(userID int, role string) (string, error) {
 
 	return token.SignedString(secretKey())
 }
-
-
