@@ -387,25 +387,50 @@ func IsPostOwner(api *config.ApiConfig, postID, userID int) (bool, error) {
 	return exists, nil
 }
 
+// func PostExists(api *config.ApiConfig, postID int) (bool, error) {
+// 	query := `
+// 		SELECT EXISTS (
+// 			SELECT 1
+// 			FROM socialposts
+// 			WHERE post_id = $1
+// 		)
+// 	`
+
+// 	var exists bool
+
+// 	err := api.DB.QueryRow(
+// 		query,
+// 		postID,
+// 	).Scan(&exists)
+
+// 	if err != nil {
+// 		return false, err
+// 	}
+
+// 	return exists, nil
+// }
+
+
+
 func PostExists(api *config.ApiConfig, postID int) (bool, error) {
-	query := `
+	var exists bool
+
+	err := api.DB.QueryRow(`
 		SELECT EXISTS (
 			SELECT 1
 			FROM socialposts
 			WHERE post_id = $1
 		)
-	`
-
-	var exists bool
-
-	err := api.DB.QueryRow(
-		query,
-		postID,
-	).Scan(&exists)
+	`, postID).Scan(&exists)
 
 	if err != nil {
 		return false, err
 	}
+
+	fmt.Println("========== POST EXISTS ==========")
+	fmt.Println("postID:", postID)
+	fmt.Println("exists:", exists)
+	fmt.Println("=================================")
 
 	return exists, nil
 }
