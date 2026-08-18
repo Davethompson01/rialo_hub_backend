@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -259,7 +258,7 @@ func LikePost(api *config.ApiConfig, postID, userID int) error {
 	}
 
 	if !exists {
-		return errors.New("post not found")
+		return err
 	}
 
 	result, err := tx.Exec(`
@@ -409,8 +408,6 @@ func IsPostOwner(api *config.ApiConfig, postID, userID int) (bool, error) {
 
 // 	return exists, nil
 // }
-
-
 
 func PostExists(api *config.ApiConfig, postID int) (bool, error) {
 	var exists bool
