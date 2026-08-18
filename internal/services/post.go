@@ -95,22 +95,8 @@ func DeletePost(
 	return nil
 }
 
-func LikePost(
-	api *config.ApiConfig,
-	postID int,
-	userID int,
-) error {
-
-	exists, err := repository.PostExists(api, postID)
-	if err != nil {
-		return fmt.Errorf("failed to check post: %w", err)
-	}
-
-	if !exists {
-		return errors.New("post not found")
-	}
-
-	if err := repository.LikePost(api, userID, postID); err != nil {
+func LikePost(api *config.ApiConfig, postID, userID int) error {
+	if err := repository.LikePost(api, postID, userID); err != nil {
 		return fmt.Errorf("failed to like post: %w", err)
 	}
 

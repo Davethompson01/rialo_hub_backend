@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -258,7 +259,7 @@ func LikePost(api *config.ApiConfig, postID, userID int) error {
 	}
 
 	if !exists {
-		return err
+		return errors.New("post not found")
 	}
 
 	result, err := tx.Exec(`
@@ -277,8 +278,10 @@ func LikePost(api *config.ApiConfig, postID, userID int) error {
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get affected rows: %w", err)
 	}
+
+	fmt.Println("LIKE ROWS AFFECTED:", rowsAffected)
 
 	if rowsAffected > 0 {
 		_, err = tx.Exec(`
