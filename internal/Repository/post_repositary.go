@@ -83,11 +83,58 @@ func BatchInsertLikes(api *config.ApiConfig, likes []models.Like) error {
 	return err
 }
 
+// func CreateComment(
+// 	api *config.ApiConfig,
+// 	comment models.Comment,
+// ) (int, error) {
+
+// 	query := `
+// 		INSERT INTO comments (
+// 			post_id,
+// 			user_id,
+// 			comment,
+// 			created_at,
+// 			updated_at
+// 		)
+// 		VALUES (
+// 			$1,
+// 			$2,
+// 			$3,
+// 			CURRENT_TIMESTAMP,
+// 			CURRENT_TIMESTAMP
+// 		)
+// 		RETURNING comment_id
+// 	`
+
+// 	var commentID int
+
+// 	err := api.DB.QueryRow(
+// 		query,
+// 		comment.Post_id,
+// 		comment.UserID,
+// 		comment.Comment,
+// 	).Scan(&commentID)
+
+// 	if err != nil {
+// 		return 0, err
+// 	}
+
+// 	return commentID, nil
+// }
+
 func CreateComment(
 	api *config.ApiConfig,
 	comment models.Comment,
 ) (int, error) {
 
+	tx, err := api.DB.Begin()
+	if err != nil {
+		return 0, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	defer tx.Rollback()
+
+	// Insert comment
 	query := `
 		INSERT INTO comments (
 			post_id,
@@ -108,7 +155,7 @@ func CreateComment(
 
 	var commentID int
 
-	err := api.DB.QueryRow(
+	err = tx.QueryRow(
 		query,
 		comment.Post_id,
 		comment.UserID,
@@ -116,7 +163,23 @@ func CreateComment(
 	).Scan(&commentID)
 
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to create comment: %w", err)
+	}
+
+	// Increment comment count
+	_, err = tx.Exec(`
+		UPDATE socialposts
+		SET comments = comments + 1
+		WHERE post_id = $1
+	`, comment.Post_id)
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to update comment count: %w", err)
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("failed to commit comment: %w", err)
 	}
 
 	return commentID, nil

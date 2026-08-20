@@ -60,3 +60,21 @@ func ValidateComment(comment models.Comment) error {
 
 	return nil
 }
+
+func ValidateNegotiation(negotiate models.SendMessage) error {
+	if negotiate.TaskId <= 0 {
+		return errors.New("invalid post ID")
+	}
+
+	if negotiate.ApplicantID <= 0 {
+		return errors.New("invalid user ID")
+	}
+
+	content := strings.TrimSpace(negotiate.Message)
+
+	if content == "" {
+		return errors.New("message cannot be empty")
+	}
+
+	return nil
+}

@@ -35,13 +35,19 @@ func main() {
 	db, err := database.DatabaseConnection()
 	if err != nil {
 		log.Fatalf("Failed to Load Database connection %v", err)
-
 	}
+	hub := &config.Hub{
+		Clients: make(map[int]*config.Client),
+	}
+
 	config := config.ApiConfig{
-		DB: db,
+		DB:  db,
+		Hub: hub,
 	}
 
 	defer config.DB.Close()
+	config.Hub.Mu.Lock()
+	config.Hub.Mu.Unlock()
 
 	router := chi.NewRouter()
 	router.Use(cors.Handler(cors.Options{

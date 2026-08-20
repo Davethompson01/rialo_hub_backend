@@ -5,6 +5,6 @@ import (
 )
 
 type ApiConfig struct {
-	DB *sql.DB
-	// Rabbit *rabbitmq.RabbitMQ
+	DB  *sql.DB
+	Hub *Hub
 }

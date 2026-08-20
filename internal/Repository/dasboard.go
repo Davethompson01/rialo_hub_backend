@@ -15,48 +15,63 @@ func DashboardFeed(
 ) ([]models.DashboardFeed, error) {
 
 	query := `
+	SELECT
+		id,
+		type,
+		user_id,
+		username,
+		title,
+		description,
+		likes,
+		comments,
+		is_liked,
+		created_at
+	FROM (
+
+		-- POSTS
 		SELECT
-			id,
-			type,
-			user_id,
-			username,
-			title,
-			description,
-			created_at
-		FROM (
+			sp.post_id AS id,
+			'post' AS type,
+			u.user_id,
+			u.username,
+			sp.title,
+			sp.description,
+			sp.likes,
+			sp.comments,
+			EXISTS (
+				SELECT 1
+				FROM likes l
+				WHERE l.post_id = sp.post_id
+				  AND l.user_id = $1
+			) AS is_liked,
+			sp.created_at
+		FROM socialposts sp
+		JOIN users u
+			ON u.user_id = sp.user_id
 
-			SELECT
-				sp.post_id AS id,
-				'post' AS type,
-				u.user_id,
-				u.username,
-				sp.title,
-				sp.description,
-				sp.created_at
-			FROM socialposts sp
-			JOIN users u
-				ON u.user_id = sp.user_id
+		UNION ALL
 
-			UNION ALL
+		-- TASKS
+		SELECT
+			tk.task_id AS id,
+			'task' AS type,
+			u.user_id,
+			u.username,
+			tk.title,
+			tk.description,
+			0 AS likes,
+			0 AS comments,
+			FALSE AS is_liked,
+			tk.created_at
+		FROM tasks tk
+		JOIN users u
+			ON u.user_id = tk.user_id
 
-			SELECT
-				tk.task_id AS id,
-				'task' AS type,
-				u.user_id,
-				u.username,
-				tk.title,
-				tk.description,
-				tk.created_at
-			FROM tasks tk
-			JOIN users u
-				ON u.user_id = tk.user_id
+	) AS feed
 
-		) AS feed
-
-		ORDER BY RANDOM()
-		LIMIT $1
-	`
-
+	ORDER BY RANDOM()
+	LIMIT $2
+`
 	ctx, cancel := context.WithTimeout(
 		context.Background(),
 		3*time.Second,
@@ -85,6 +100,7 @@ func DashboardFeed(
 			&feed.Username,
 			&feed.Title,
 			&feed.Description,
+			&feed.Likes,
 			&feed.CreatedAt,
 		)
 
