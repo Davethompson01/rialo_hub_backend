@@ -23,21 +23,11 @@ func CreateNegotiation(
 
 	// 1. Create negotiation/message
 	query := `
-		INSERT INTO negotiations (
+		INSERT INTO conversations (
 			task_id,
-			employer_id,
-			applicant_id,
-			message,
-			new_offer,
 			created_at
 		)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING
-			negotiations_id,
-			employer_id,
-			applicant_id,
-			message,
-			new_offer
+		VALUES ($1, $2)
 	`
 
 	var message models.SendMessage
@@ -45,22 +35,14 @@ func CreateNegotiation(
 	err = tx.QueryRow(
 		query,
 		negotiate.TaskId,
-		negotiate.EmployerID,
-		negotiate.ApplicantID,
-		negotiate.Message,
-		negotiate.Offer.NewOffer,
 		negotiate.CreatedAt,
 	).Scan(
-		&message.NegotiationID,
-		&message.EmployerID,
-		&message.ApplicantID,
-		&message.Message,
-		&message.Offer.NewOffer,
+		&message.TaskId,
 	)
 
 	if err != nil {
 		return models.SendMessage{}, fmt.Errorf(
-			"failed to create negotiation: %w",
+			"failed to create Conversation: %w",
 			err,
 		)
 	}
@@ -239,5 +221,3 @@ func GetApplicationOffers(api *config.ApiConfig, UserID int) ([]models.OfferResp
 	}
 	return offers, nil
 }
-func GetConversation() {}
-func GetMessages()     {}

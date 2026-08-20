@@ -71,7 +71,8 @@ func DashboardFeed(
 
 	ORDER BY RANDOM()
 	LIMIT $2
-`
+	`
+
 	ctx, cancel := context.WithTimeout(
 		context.Background(),
 		3*time.Second,
@@ -81,6 +82,7 @@ func DashboardFeed(
 	rows, err := api.DB.QueryContext(
 		ctx,
 		query,
+		userID,
 		limit,
 	)
 	if err != nil {
@@ -101,6 +103,8 @@ func DashboardFeed(
 			&feed.Title,
 			&feed.Description,
 			&feed.Likes,
+			&feed.Comments,
+			&feed.IsLiked,
 			&feed.CreatedAt,
 		)
 
