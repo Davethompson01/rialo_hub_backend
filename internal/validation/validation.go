@@ -70,7 +70,7 @@ func ValidateNegotiation(negotiate models.SendMessage) error {
 		return errors.New("invalid user ID")
 	}
 
-	content := strings.TrimSpace(negotiate.Message)
+	content := strings.TrimSpace(negotiate.Content)
 
 	if content == "" {
 		return errors.New("message cannot be empty")

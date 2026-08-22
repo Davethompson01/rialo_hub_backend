@@ -101,21 +101,6 @@ CREATE TABLE conversations (
 );
 
 
-CREATE TABLE conversation_participants (
-    conversation_id BIGINT NOT NULL
-        REFERENCES conversations(conversation_id)
-        ON DELETE CASCADE,
-
-    user_id BIGINT NOT NULL
-        REFERENCES users(user_id)
-        ON DELETE CASCADE,
-
-    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-    PRIMARY KEY (conversation_id, user_id)
-);
-
-
 CREATE TABLE messages (
     message_id BIGSERIAL PRIMARY KEY,
 
@@ -172,3 +157,18 @@ CREATE TABLE offers (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ
 );
+
+ALTER TABLE conversations
+ADD COLUMN employer_id BIGINT NOT NULL REFERENCES users(user_id),
+ADD COLUMN applicant_id BIGINT NOT NULL REFERENCES users(user_id);
+
+CREATE UNIQUE INDEX unique_task_conversation
+ON conversations(task_id, employer_id, applicant_id);
+
+ALTER TABLE conversations
+ADD COLUMN updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+ALTER Table offers ADD COLUMN created_by INTEGER NULL
+
+
+
