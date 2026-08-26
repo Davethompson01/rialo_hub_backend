@@ -78,6 +78,8 @@ func main() {
 	route.Task(routes, &config)
 	route.Post(routes, &config)
 	route.Dashboard(routes, &config)
+	route.Message(routes, &config)
+	route.Offer(routes, &config)
 	router.Mount("/v1", routes)
 	server := &http.Server{
 		Handler: router,

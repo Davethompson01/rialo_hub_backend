@@ -7,14 +7,14 @@ import (
 	"github.com/Davethompson01/rialo_hub_backend/internal/validation"
 )
 
-func CreateNegotiation(api *config.ApiConfig, negotiate models.SendMessage) (models.SendMessage, error) {
+func CreateNegotiation(api *config.ApiConfig, negotiate models.SendMessage) (models.NegotiationResponse, error) {
 	if err := validation.ValidateNegotiation(negotiate); err != nil {
-		return models.SendMessage{}, err
+		return models.NegotiationResponse{}, err
 	}
 
 	CreateNegotiation, err := repository.CreateNegotiation(api, negotiate)
 	if err != nil {
-		return models.SendMessage{}, err
+		return models.NegotiationResponse{}, err
 	}
 
 	return CreateNegotiation, nil

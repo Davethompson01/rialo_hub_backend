@@ -30,7 +30,7 @@ type OfferResponse struct {
 	EmployerID     int       `json:"employer_id"`
 	ApplicantID    int       `json:"applicant_id"`
 	CreatedBy      int       `json:"created_by"`
-	Amount         int       `json:"amount"`
+	Amount         float64       `json:"amount"`
 	Status         string    `json:"status"`
 	Username       string    `json:"username"`
 	Avatar         string    `json:"avatar"`

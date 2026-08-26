@@ -37,6 +37,8 @@ func SendMessage(
 
 	var savedMessage models.SendMessage
 
+	
+
 	err := api.DB.QueryRowContext(
 		ctx,
 		query,
@@ -66,12 +68,13 @@ func SendMessage(
 		ctx,
 		`
 		SELECT
-			CASE
-				WHEN employer_id = $1 THEN applicant_id
-				ELSE employer_id
-			END
-		FROM conversations
-		WHERE conversation_id = $2
+    CASE
+        WHEN employer_id = $1 THEN applicant_id
+        WHEN applicant_id = $1 THEN employer_id
+        ELSE NULL
+    END
+FROM conversations
+WHERE conversation_id = $2
 		`,
 		message.SenderID,
 		message.ConversationID,

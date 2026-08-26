@@ -30,6 +30,7 @@ func CreateNegotiation(api *config.ApiConfig) http.HandlerFunc {
 		}
 		claims := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
 		message.ApplicantID = claims.UserID
+		message.CreatedBy = claims.UserID
 		message.CreatedAt = time.Now()
 
 		CreateNegotiation, err := services.CreateNegotiation(api, message)
@@ -41,86 +42,6 @@ func CreateNegotiation(api *config.ApiConfig) http.HandlerFunc {
 		RespondWithJson(w, 200, true, "User can now Negotiate", CreateNegotiation)
 	}
 }
-
-// func AcceptOffer(api *config.ApiConfig) http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		var message models.SendMessage
-// 		if err := json.NewDecoder(r.Body).Decode(&message); err != nil {
-// 			RespondWithJson(
-// 				w,
-// 				http.StatusBadRequest,
-// 				false,
-// 				"Invalid request body",
-// 				nil,
-// 			)
-// 			return
-// 		}
-
-// 		claims := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
-// 		message.EmployerID = claims.UserID
-
-// 		acceptServices, err := services.AcceptOffers(api, message.ApplicationID, message.TaskId, message.EmployerID, message.Offer.OfferID, message.ConversationID)
-// 		if err != nil {
-// 			RespondWithJson(
-// 				w,
-// 				http.StatusBadRequest,
-// 				false,
-// 				err.Error(),
-// 				nil,
-// 			)
-// 			return
-// 		}
-
-// 		RespondWithJson(
-// 			w,
-// 			http.StatusCreated,
-// 			true,
-// 			"Accepted Offer",
-// 			acceptServices,
-// 		)
-
-// 	}
-// }
-
-// func RejectOffers(api *config.ApiConfig) http.HandlerFunc {
-// 	return func(w http.ResponseWriter, r *http.Request) {
-// 		var message models.SendMessage
-// 		if err := json.NewDecoder(r.Body).Decode(&message); err != nil {
-// 			RespondWithJson(
-// 				w,
-// 				http.StatusBadRequest,
-// 				false,
-// 				"Invalid request body",
-// 				nil,
-// 			)
-// 			return
-// 		}
-
-// 		claims := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
-// 		message.EmployerID = claims.UserID
-
-// 		reject, err := services.RejectOffers(api, message.ApplicationID, message.TaskId, message.Offer.OfferID, message.EmployerID, message.ConversationID)
-// 		if err != nil {
-// 			RespondWithJson(
-// 				w,
-// 				http.StatusBadRequest,
-// 				false,
-// 				err.Error(),
-// 				nil,
-// 			)
-// 			return
-// 		}
-
-// 		RespondWithJson(
-// 			w,
-// 			http.StatusCreated,
-// 			true,
-// 			"Reject Offer",
-// 			reject,
-// 		)
-
-// 	}
-// }
 
 func GetApplicantOffersHandler(
 	api *config.ApiConfig,
@@ -332,7 +253,7 @@ func GetConversationMessagesHandler(
 			return
 		}
 
-		messages, err := repository.GetConversationMessages(
+		messages, err := repository.GetMessages(
 			api,
 			conversationID,
 		)
@@ -357,3 +278,4 @@ func GetConversationMessagesHandler(
 		)
 	}
 }
+

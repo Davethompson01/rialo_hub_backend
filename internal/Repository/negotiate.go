@@ -13,11 +13,11 @@ import (
 func CreateNegotiation(
 	api *config.ApiConfig,
 	negotiate models.SendMessage,
-) (models.SendMessage, error) {
+) (models.NegotiationResponse, error) {
 
 	tx, err := api.DB.Begin()
 	if err != nil {
-		return models.SendMessage{}, fmt.Errorf(
+		return models.NegotiationResponse{}, fmt.Errorf(
 			"failed to begin transaction: %w",
 			err,
 		)
@@ -25,11 +25,11 @@ func CreateNegotiation(
 
 	defer tx.Rollback()
 
-	var message models.SendMessage
+	// ============================================================
+	// 1. GET OR CREATE CONVERSATION
+	// ============================================================
 
-	// ------------------------------------------------
-	// 1. Get existing conversation or create one
-	// ------------------------------------------------
+	var conversation models.SendMessage
 
 	query := `
 		SELECT
@@ -50,27 +50,36 @@ func CreateNegotiation(
 		negotiate.EmployerID,
 		negotiate.ApplicantID,
 	).Scan(
-		&message.ConversationID,
-		&message.TaskId,
-		&message.EmployerID,
-		&message.ApplicantID,
-		&message.CreatedAt,
+		&conversation.ConversationID,
+		&conversation.TaskId,
+		&conversation.EmployerID,
+		&conversation.ApplicantID,
+		&conversation.CreatedAt,
 	)
 
-	// Conversation doesn't exist
+	// ------------------------------------------------------------
+	// Conversation does not exist
+	// ------------------------------------------------------------
+
 	if err == sql.ErrNoRows {
 
 		query = `
 			INSERT INTO conversations (
-    task_id,
-    employer_id,
-    applicant_id,
-    created_at
-)
-VALUES ($1, $2, $3, $4)
-ON CONFLICT (task_id, employer_id, applicant_id)
-DO UPDATE SET task_id = EXCLUDED.task_id
-RETURNING conversation_id, task_id, employer_id, applicant_id, created_at;
+				task_id,
+				employer_id,
+				applicant_id,
+				created_at
+			)
+			VALUES ($1, $2, $3, $4)
+			ON CONFLICT (task_id, employer_id, applicant_id)
+			DO UPDATE SET
+				task_id = EXCLUDED.task_id
+			RETURNING
+				conversation_id,
+				task_id,
+				employer_id,
+				applicant_id,
+				created_at
 		`
 
 		err = tx.QueryRow(
@@ -80,62 +89,122 @@ RETURNING conversation_id, task_id, employer_id, applicant_id, created_at;
 			negotiate.ApplicantID,
 			negotiate.CreatedAt,
 		).Scan(
-			&message.ConversationID,
-			&message.TaskId,
-			&message.EmployerID,
-			&message.ApplicantID,
-			&message.CreatedAt,
+			&conversation.ConversationID,
+			&conversation.TaskId,
+			&conversation.EmployerID,
+			&conversation.ApplicantID,
+			&conversation.CreatedAt,
 		)
 
 		if err != nil {
-			return models.SendMessage{}, fmt.Errorf(
-				"failed to create/get conversation: %w",
+			return models.NegotiationResponse{}, fmt.Errorf(
+				"failed to create conversation: %w",
 				err,
 			)
 		}
 
 	} else if err != nil {
 
-		return models.SendMessage{}, fmt.Errorf(
+		return models.NegotiationResponse{}, fmt.Errorf(
 			"failed to get conversation: %w",
 			err,
 		)
 	}
 
-	// ------------------------------------------------
-	// 2. Create offer
-	// ------------------------------------------------
+	// ============================================================
+	// 2. INSERT MESSAGE
+	// ============================================================
 
-	_, err = tx.Exec(`
-		INSERT INTO offers (
-			task_id,
-			employer_id,
-			applicant_id,
-			new_offer,
-			created_by
-			status,
+	var savedMessage models.SendMessage
+
+	err = tx.QueryRow(`
+		INSERT INTO messages (
+			conversation_id,
+			sender_id,
+			content,
 			created_at
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES ($1, $2, $3, $4)
+		RETURNING
+			message_id,
+			conversation_id,
+			sender_id,
+			content,
+			created_at
 	`,
-		negotiate.TaskId,
-		negotiate.EmployerID,
-		negotiate.ApplicantID,
-		negotiate.Offer.NewOffer,
-		negotiate.Status,
+		conversation.ConversationID,
+		negotiate.CreatedBy,
+		negotiate.Content,
 		negotiate.CreatedAt,
+	).Scan(
+		&savedMessage.MessageID,
+		&savedMessage.ConversationID,
+		&savedMessage.SenderID,
+		&savedMessage.Content,
+		&savedMessage.CreatedAt,
 	)
 
 	if err != nil {
-		return models.SendMessage{}, fmt.Errorf(
+		return models.NegotiationResponse{}, fmt.Errorf(
+			"failed to insert message: %w",
+			err,
+		)
+	}
+
+	// ============================================================
+	// 3. CREATE OFFER
+	// ============================================================
+
+	var offerID int
+
+	err = tx.QueryRow(`
+		INSERT INTO offers (
+			conversation_id,
+			task_id,
+			employer_id,
+			applicant_id,
+			amount,
+			created_by,
+			status,
+			created_at
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING offer_id
+	`,
+		conversation.ConversationID,
+		conversation.TaskId,
+		conversation.EmployerID,
+		conversation.ApplicantID,
+		negotiate.Offer.NewOffer,
+		negotiate.CreatedBy,
+		negotiate.Status,
+		negotiate.CreatedAt,
+	).Scan(&offerID)
+
+	if err != nil {
+		return models.NegotiationResponse{}, fmt.Errorf(
 			"failed to insert offer: %w",
 			err,
 		)
 	}
 
-	// ------------------------------------------------
-	// 3. Update notification count
-	// ------------------------------------------------
+	// ============================================================
+	// DEBUG
+	// ============================================================
+
+	fmt.Printf(
+		"DEBUG negotiation: conversation=%d task=%d employer=%d applicant=%d offer=%d message=%d\n",
+		conversation.ConversationID,
+		conversation.TaskId,
+		conversation.EmployerID,
+		conversation.ApplicantID,
+		offerID,
+		savedMessage.MessageID,
+	)
+
+	// ============================================================
+	// 4. UPDATE NOTIFICATION COUNT
+	// ============================================================
 
 	_, err = tx.Exec(`
 		INSERT INTO notifications (
@@ -154,32 +223,32 @@ RETURNING conversation_id, task_id, employer_id, applicant_id, created_at;
 	)
 
 	if err != nil {
-		return models.SendMessage{}, fmt.Errorf(
+		return models.NegotiationResponse{}, fmt.Errorf(
 			"failed to update notification count: %w",
 			err,
 		)
 	}
 
-	// ------------------------------------------------
-	// 4. Commit transaction
-	// ------------------------------------------------
+	// ============================================================
+	// 5. COMMIT TRANSACTION
+	// ============================================================
 
 	if err := tx.Commit(); err != nil {
-		return models.SendMessage{}, fmt.Errorf(
+		return models.NegotiationResponse{}, fmt.Errorf(
 			"failed to commit negotiation: %w",
 			err,
 		)
 	}
 
-	// ------------------------------------------------
-	// 5. Send WebSocket event
-	// ------------------------------------------------
+	// ============================================================
+	// 6. SEND OFFER WEBSOCKET EVENT
+	// ============================================================
 
-	event := models.WebSocketEvent{
+	offerEvent := models.WebSocketEvent{
 		Type: "new_offer",
 		Data: models.OfferNotification{
 			TaskId:         negotiate.TaskId,
-			ConversationID: message.ConversationID,
+			ConversationID: conversation.ConversationID,
 			UserID:         negotiate.EmployerID,
 			EmployeeID:     negotiate.ApplicantID,
 			NewOffer:       negotiate.Offer.NewOffer,
@@ -189,15 +258,47 @@ RETURNING conversation_id, task_id, employer_id, applicant_id, created_at;
 
 	if err := api.Hub.SendToUser(
 		negotiate.EmployerID,
-		event,
+		offerEvent,
 	); err != nil {
 		fmt.Printf(
-			"failed to send websocket notification: %v\n",
+			"failed to send websocket offer notification: %v\n",
 			err,
 		)
 	}
 
-	return message, nil
+	// ============================================================
+	// 7. SEND MESSAGE WEBSOCKET EVENT
+	// ============================================================
+
+	messageEvent := models.WebSocketEvent{
+		Type: "new_message",
+		Data: savedMessage,
+	}
+
+	if err := api.Hub.SendToUser(
+		negotiate.EmployerID,
+		messageEvent,
+	); err != nil {
+		fmt.Printf(
+			"failed to send websocket message: %v\n",
+			err,
+		)
+	}
+
+	// ============================================================
+	// 8. RETURN RESPONSE
+	// ============================================================
+
+	return models.NegotiationResponse{
+		TaskID:         conversation.TaskId,
+		ConversationID: conversation.ConversationID,
+		EmployerID:     conversation.EmployerID,
+		ApplicantID:    conversation.ApplicantID,
+		OfferID:        offerID,
+		Amount:         negotiate.Offer.NewOffer,
+		Status:         negotiate.Status,
+		CreatedAt:      negotiate.CreatedAt,
+	}, nil
 }
 
 func GetAllApplicantOffer(
