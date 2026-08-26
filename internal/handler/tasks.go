@@ -17,7 +17,7 @@ func CreateTasks(api *config.ApiConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var task models.Task
 		if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-			RespondWithJson(w, http.StatusBadRequest, false, "Invalid request body", nil)
+			RespondWithJson(w, http.StatusBadRequest, false, err.Error(), nil)
 			return
 		}
 
