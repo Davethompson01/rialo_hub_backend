@@ -1,194 +1,209 @@
--- ALTER TABLE task_application
--- DROP CONSTRAINT task_application_task_id_fkey;
+-- -- ALTER TABLE task_application
+-- -- DROP CONSTRAINT task_application_task_id_fkey;
 
 
--- ALTER TABLE task_application
--- ADD CONSTRAINT task_application_task_id_fkey
--- FOREIGN KEY (task_id)
--- REFERENCES tasks(task_id)
--- ON DELETE CASCADE;
+-- -- ALTER TABLE task_application
+-- -- ADD CONSTRAINT task_application_task_id_fkey
+-- -- FOREIGN KEY (task_id)
+-- -- REFERENCES tasks(task_id)
+-- -- ON DELETE CASCADE;
 
 
-CREATE TABLE socialposts (
-    post_id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    likes INT NOT NULL DEFAULT 0,
-    comments INT NOT NULL DEFAULT 0,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+-- CREATE TABLE socialposts (
+--     post_id SERIAL PRIMARY KEY,
+--     user_id INT NOT NULL,
+--     title VARCHAR(255) NOT NULL,
+--     description TEXT NOT NULL,
+--     likes INT NOT NULL DEFAULT 0,
+--     comments INT NOT NULL DEFAULT 0,
+--     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT socialposts_user_id_fkey
-        FOREIGN KEY (user_id)
-        REFERENCES users(user_id)
-        ON DELETE CASCADE
-);
+--     CONSTRAINT socialposts_user_id_fkey
+--         FOREIGN KEY (user_id)
+--         REFERENCES users(user_id)
+--         ON DELETE CASCADE
+-- );
 
-CREATE TABLE likes (
-    like_id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL,
-    post_id INT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+-- CREATE TABLE likes (
+--     like_id SERIAL PRIMARY KEY,
+--     user_id INT NOT NULL,
+--     post_id INT NOT NULL,
+--     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT likes_user_id_fkey
-        FOREIGN KEY (user_id)
-        REFERENCES users(user_id)
-        ON DELETE CASCADE,
+--     CONSTRAINT likes_user_id_fkey
+--         FOREIGN KEY (user_id)
+--         REFERENCES users(user_id)
+--         ON DELETE CASCADE,
 
-    CONSTRAINT likes_post_id_fkey
-        FOREIGN KEY (post_id)
-        REFERENCES socialposts(post_id)
-        ON DELETE CASCADE,
+--     CONSTRAINT likes_post_id_fkey
+--         FOREIGN KEY (post_id)
+--         REFERENCES socialposts(post_id)
+--         ON DELETE CASCADE,
 
-    CONSTRAINT unique_user_post_like
-        UNIQUE (user_id, post_id)
-);
+--     CONSTRAINT unique_user_post_like
+--         UNIQUE (user_id, post_id)
+-- );
 
-CREATE TABLE comments (
-    comment_id SERIAL PRIMARY KEY,
-    post_id INT NOT NULL,
-    user_id INT NOT NULL,
-    comment TEXT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+-- CREATE TABLE comments (
+--     comment_id SERIAL PRIMARY KEY,
+--     post_id INT NOT NULL,
+--     user_id INT NOT NULL,
+--     comment TEXT NOT NULL,
+--     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT comments_post_id_fkey
-        FOREIGN KEY (post_id)
-        REFERENCES socialposts(post_id)
-        ON DELETE CASCADE,
+--     CONSTRAINT comments_post_id_fkey
+--         FOREIGN KEY (post_id)
+--         REFERENCES socialposts(post_id)
+--         ON DELETE CASCADE,
 
-    CONSTRAINT comments_user_id_fkey
-        FOREIGN KEY (user_id)
-        REFERENCES users(user_id)
-        ON DELETE CASCADE
-);
+--     CONSTRAINT comments_user_id_fkey
+--         FOREIGN KEY (user_id)
+--         REFERENCES users(user_id)
+--         ON DELETE CASCADE
+-- );
 
 
+
+-- SELECT
+--     comment_id,
+--     post_id,
+--     user_id,
+--     comment,
+--     created_at
+-- FROM comments
+-- WHERE post_id = 2
+-- ORDER BY created_at DESC;
+
+
+-- SELECT
+--     sp.post_id,
+--     sp.comments AS stored_count,
+--     COUNT(c.comment_id) AS actual_count
+-- FROM socialposts sp
+-- LEFT JOIN comments c
+--     ON c.post_id = sp.post_id
+-- WHERE sp.post_id = 2
+-- GROUP BY sp.post_id, sp.comments;
+
+
+
+
+-- -- conversations
+
+-- CREATE TABLE conversations (
+--     conversation_id BIGSERIAL PRIMARY KEY,
+--     task_id BIGINT NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
+--     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+--     UNIQUE(task_id)
+-- );
+
+
+-- CREATE TABLE messages (
+--     message_id BIGSERIAL PRIMARY KEY,
+
+--     conversation_id BIGINT NOT NULL
+--         REFERENCES conversations(conversation_id)
+--         ON DELETE CASCADE,
+
+--     sender_id BIGINT NOT NULL
+--         REFERENCES users(user_id)
+--         ON DELETE CASCADE,
+
+--     message_type VARCHAR(30) NOT NULL DEFAULT 'text',
+
+--     content TEXT,
+
+--     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+--     updated_at TIMESTAMPTZ,
+
+--     deleted_at TIMESTAMPTZ
+-- );
+
+-- CREATE INDEX idx_messages_conversation
+-- ON messages(conversation_id, created_at DESC);
+
+-- CREATE INDEX idx_messages_sender
+-- ON messages(sender_id);
+
+
+-- CREATE TABLE offers (
+--     offer_id BIGSERIAL PRIMARY KEY,
+
+--     conversation_id BIGINT NOT NULL
+--         REFERENCES conversations(conversation_id)
+--         ON DELETE CASCADE,
+
+--     message_id BIGINT
+--         REFERENCES messages(message_id)
+--         ON DELETE SET NULL,
+
+--     task_id BIGINT NOT NULL
+--         REFERENCES tasks(task_id)
+--         ON DELETE CASCADE,
+
+--     employer_id BIGINT NOT NULL
+--         REFERENCES users(user_id),
+
+--     applicant_id BIGINT NOT NULL
+--         REFERENCES users(user_id),
+
+--     amount NUMERIC(12,2) NOT NULL,
+
+--     status VARCHAR(20) NOT NULL DEFAULT 'pending',
+
+--     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+--     updated_at TIMESTAMPTZ
+-- );
+
+-- ALTER TABLE conversations
+-- ADD COLUMN employer_id BIGINT NOT NULL REFERENCES users(user_id),
+-- ADD COLUMN applicant_id BIGINT NOT NULL REFERENCES users(user_id);
+
+-- CREATE UNIQUE INDEX unique_task_conversation
+-- ON conversations(task_id, employer_id, applicant_id);
+
+-- ALTER TABLE conversations
+-- ADD COLUMN updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+-- ALTER Table offers ADD COLUMN created_by INTEGER NULL
+
+
+
+-- CREATE TABLE notifications (
+--     notification_id BIGSERIAL PRIMARY KEY,
+
+--     task_id BIGINT NOT NULL
+--         REFERENCES tasks(task_id)
+--         ON DELETE CASCADE,
+
+--     user_id BIGINT NOT NULL
+--         REFERENCES users(user_id)
+--         ON DELETE CASCADE,
+
+--     notifications_count INTEGER NOT NULL DEFAULT 0,
+
+--     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+--     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+--     UNIQUE (task_id, user_id)
+-- );
+
+
+SELECT conversation_id, employer_id, applicant_id
+FROM conversations
+WHERE conversation_id = 20;
 
 SELECT
-    comment_id,
-    post_id,
-    user_id,
-    comment,
-    created_at
-FROM comments
-WHERE post_id = 2
-ORDER BY created_at DESC;
-
-
-SELECT
-    sp.post_id,
-    sp.comments AS stored_count,
-    COUNT(c.comment_id) AS actual_count
-FROM socialposts sp
-LEFT JOIN comments c
-    ON c.post_id = sp.post_id
-WHERE sp.post_id = 2
-GROUP BY sp.post_id, sp.comments;
-
-
-
-
--- conversations
-
-CREATE TABLE conversations (
-    conversation_id BIGSERIAL PRIMARY KEY,
-    task_id BIGINT NOT NULL REFERENCES tasks(task_id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-    UNIQUE(task_id)
-);
-
-
-CREATE TABLE messages (
-    message_id BIGSERIAL PRIMARY KEY,
-
-    conversation_id BIGINT NOT NULL
-        REFERENCES conversations(conversation_id)
-        ON DELETE CASCADE,
-
-    sender_id BIGINT NOT NULL
-        REFERENCES users(user_id)
-        ON DELETE CASCADE,
-
-    message_type VARCHAR(30) NOT NULL DEFAULT 'text',
-
-    content TEXT,
-
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ,
-
-    deleted_at TIMESTAMPTZ
-);
-
-CREATE INDEX idx_messages_conversation
-ON messages(conversation_id, created_at DESC);
-
-CREATE INDEX idx_messages_sender
-ON messages(sender_id);
-
-
-CREATE TABLE offers (
-    offer_id BIGSERIAL PRIMARY KEY,
-
-    conversation_id BIGINT NOT NULL
-        REFERENCES conversations(conversation_id)
-        ON DELETE CASCADE,
-
-    message_id BIGINT
-        REFERENCES messages(message_id)
-        ON DELETE SET NULL,
-
-    task_id BIGINT NOT NULL
-        REFERENCES tasks(task_id)
-        ON DELETE CASCADE,
-
-    employer_id BIGINT NOT NULL
-        REFERENCES users(user_id),
-
-    applicant_id BIGINT NOT NULL
-        REFERENCES users(user_id),
-
-    amount NUMERIC(12,2) NOT NULL,
-
-    status VARCHAR(20) NOT NULL DEFAULT 'pending',
-
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ
-);
-
-ALTER TABLE conversations
-ADD COLUMN employer_id BIGINT NOT NULL REFERENCES users(user_id),
-ADD COLUMN applicant_id BIGINT NOT NULL REFERENCES users(user_id);
-
-CREATE UNIQUE INDEX unique_task_conversation
-ON conversations(task_id, employer_id, applicant_id);
-
-ALTER TABLE conversations
-ADD COLUMN updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
-
-ALTER Table offers ADD COLUMN created_by INTEGER NULL
-
-
-
-CREATE TABLE notifications (
-    notification_id BIGSERIAL PRIMARY KEY,
-
-    task_id BIGINT NOT NULL
-        REFERENCES tasks(task_id)
-        ON DELETE CASCADE,
-
-    user_id BIGINT NOT NULL
-        REFERENCES users(user_id)
-        ON DELETE CASCADE,
-
-    notifications_count INTEGER NOT NULL DEFAULT 0,
-
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-    UNIQUE (task_id, user_id)
-);
-
-
+    tc.constraint_name,
+    kcu.column_name,
+    ccu.table_name AS referenced_table,
+    ccu.column_name AS referenced_column
+FROM information_schema.table_constraints AS tc
+JOIN information_schema.key_column_usage AS kcu
+    ON tc.constraint_name = kcu.constraint_name
+JOIN information_schema.constraint_column_usage AS ccu
+    ON tc.constraint_name = ccu.constraint_name
+WHERE tc.constraint_name = 'messages_conversation_id_fkey';

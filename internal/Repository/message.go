@@ -8,10 +8,11 @@ import (
 	"github.com/Davethompson01/rialo_hub_backend/config"
 	"github.com/Davethompson01/rialo_hub_backend/internal/models"
 )
+
 func SendMessage(
 	api *config.ApiConfig,
 	message models.SendMessage,
-) (models.SendMessage, error) {
+) (models.MessageResponse, error) {
 
 	ctx, cancel := context.WithTimeout(
 		context.Background(),
@@ -35,9 +36,11 @@ func SendMessage(
 			created_at
 	`
 
-	var savedMessage models.SendMessage
-
-	
+	var savedMessage models.MessageResponse
+	fmt.Println("ConversationID:", message.ConversationID)
+	fmt.Println("SenderID:", message.SenderID)
+	fmt.Println("Content:", message.Content)
+	fmt.Println("CreatedAt:", message.CreatedAt)
 
 	err := api.DB.QueryRowContext(
 		ctx,
@@ -55,7 +58,7 @@ func SendMessage(
 	)
 
 	if err != nil {
-		return models.SendMessage{}, fmt.Errorf(
+		return models.MessageResponse{}, fmt.Errorf(
 			"failed to send message: %w",
 			err,
 		)
@@ -79,9 +82,9 @@ WHERE conversation_id = $2
 		message.SenderID,
 		message.ConversationID,
 	).Scan(&receiverID)
-
+	fmt.Println(message.ConversationID)
 	if err != nil {
-		return models.SendMessage{}, fmt.Errorf(
+		return models.MessageResponse{}, fmt.Errorf(
 			"failed to find message receiver: %w",
 			err,
 		)

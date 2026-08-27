@@ -20,6 +20,13 @@ type SendMessage struct {
 	CreatedBy      int
 }
 
+type SendMessageRequest struct {
+    ConversationID int    `json:"conversation_id"`
+    Content        string `json:"content"`
+}
+
+
+
 type NegotiationResponse struct {
 	TaskID         int       `json:"task_id"`
 	ConversationID int       `json:"conversation_id"`

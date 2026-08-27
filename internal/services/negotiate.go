@@ -87,14 +87,11 @@ func RejectOffers(
 
 	return rejected, nil
 }
-func SendMessage(api *config.ApiConfig, message models.SendMessage) (models.SendMessage, error) {
-	if err := validation.ValidateNegotiation(message); err != nil {
-		return models.SendMessage{}, err
-	}
+func SendMessage(api *config.ApiConfig, message models.SendMessage) (models.MessageResponse, error) {
 
 	SendMessage, err := repository.SendMessage(api, message)
 	if err != nil {
-		return models.SendMessage{}, err
+		return models.MessageResponse{}, err
 	}
 	return SendMessage, nil
 }

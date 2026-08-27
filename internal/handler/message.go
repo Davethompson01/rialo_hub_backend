@@ -279,3 +279,67 @@ func GetConversationMessagesHandler(
 	}
 }
 
+ func CreateMessage(
+    api *config.ApiConfig,
+) http.HandlerFunc {
+
+    return func(w http.ResponseWriter, r *http.Request) {
+
+        var message models.SendMessage
+
+        if err := json.NewDecoder(r.Body).Decode(&message); err != nil {
+            RespondWithJson(
+                w,
+                http.StatusBadRequest,
+                false,
+                "Invalid request body",
+                nil,
+            )
+            return
+        }
+
+        claims, ok := r.Context().
+            Value(middleware.ClaimsKey).
+            (*auth.Claims)
+
+        if !ok {
+            RespondWithJson(
+                w,
+                http.StatusUnauthorized,
+                false,
+                "Unauthorized",
+                nil,
+            )
+            return
+        }
+
+        message.ApplicantID = claims.UserID
+        message.CreatedBy = claims.UserID
+        message.SenderID = claims.UserID
+        message.CreatedAt = time.Now()
+
+        result, err := services.SendMessage(
+            api,
+            message,
+        )
+
+        if err != nil {
+            RespondWithJson(
+                w,
+                http.StatusBadRequest,
+                false,
+                err.Error(),
+                nil,
+            )
+            return
+        }
+
+        RespondWithJson(
+            w,
+            http.StatusOK,
+            true,
+            "Message sent",
+            result,
+        )
+    }
+}
