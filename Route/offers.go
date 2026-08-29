@@ -19,7 +19,6 @@ func Offer(r chi.Router, api *config.ApiConfig) {
 			"/applicant",
 			handler.GetApplicantOffersHandler(api),
 		)
-
 		// Applicant sees their own offers
 		r.Get(
 			"/my",
