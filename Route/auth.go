@@ -24,5 +24,7 @@ func CreateUser(r chi.Router, api *config.ApiConfig) {
 		)
 
 		r.With(middleware.JWTMiddleware).Get("/profile", handler.UserProfile(api))
+
+		r.Post("/logout", handler.LogoutHandler)
 	})
 }
