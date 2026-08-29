@@ -9,62 +9,62 @@ import (
 	"github.com/Davethompson01/rialo_hub_backend/internal/models"
 )
 
-func GetConversationMessages(
-	api *config.ApiConfig,
-	conversationID int,
-) ([]models.SendMessage, error) {
+// func GetConversationMessages(
+// 	api *config.ApiConfig,
+// 	conversationID int,
+// ) ([]models.SendMessage, error) {
 
-	query := `
-		SELECT
-			message_id,
-			conversation_id,
-			sender_id,
-			content,
-			created_at
-		FROM messages
-		WHERE conversation_id = $1
-		ORDER BY created_at ASC
-	`
+// 	query := `
+// 		SELECT
+// 			message_id,
+// 			conversation_id,
+// 			sender_id,
+// 			content,
+// 			created_at
+// 		FROM messages
+// 		WHERE conversation_id = $1
+// 		ORDER BY created_at ASC
+// 	`
 
-	ctx, cancel := context.WithTimeout(
-		context.Background(),
-		3*time.Second,
-	)
-	defer cancel()
+// 	ctx, cancel := context.WithTimeout(
+// 		context.Background(),
+// 		3*time.Second,
+// 	)
+// 	defer cancel()
 
-	rows, err := api.DB.QueryContext(
-		ctx,
-		query,
-		conversationID,
-	)
+// 	rows, err := api.DB.QueryContext(
+// 		ctx,
+// 		query,
+// 		conversationID,
+// 	)
 
-	if err != nil {
-		return nil, err
-	}
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	defer rows.Close()
+// 	defer rows.Close()
 
-	messages := make([]models.SendMessage, 0)
+// 	messages := make([]models.SendMessage, 0)
 
-	for rows.Next() {
+// 	for rows.Next() {
 
-		var message models.SendMessage
+// 		var message models.SendMessage
 
-		if err := rows.Scan(
-			&message.MessageID,
-			&message.ConversationID,
-			&message.SenderID,
-			&message.Content,
-			&message.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
+// 		if err := rows.Scan(
+// 			&message.MessageID,
+// 			&message.ConversationID,
+// 			&message.SenderID,
+// 			&message.Content,
+// 			&message.CreatedAt,
+// 		); err != nil {
+// 			return nil, err
+// 		}
 
-		messages = append(messages, message)
-	}
+// 		messages = append(messages, message)
+// 	}
 
-	return messages, rows.Err()
-}
+// 	return messages, rows.Err()
+// }
 
 func GetMessages(
 	api *config.ApiConfig,

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 
@@ -191,7 +192,12 @@ func IsTaskOwner(api *config.ApiConfig, taskID, employerID int) (bool, error) {
 	return exists, nil
 }
 
-func IsApplicationForTask(api *config.ApiConfig, applicationID, taskID int) (bool, error) {
+func IsApplicationForTask(
+	api *config.ApiConfig,
+	applicationID int,
+	taskID int,
+) (bool, error) {
+
 	query := `
 		SELECT EXISTS (
 			SELECT 1
@@ -202,30 +208,86 @@ func IsApplicationForTask(api *config.ApiConfig, applicationID, taskID int) (boo
 	`
 
 	var exists bool
-	err := api.DB.QueryRow(query, applicationID, taskID).Scan(&exists)
+
+	err := api.DB.QueryRow(
+		query,
+		applicationID,
+		taskID,
+	).Scan(&exists)
+
 	if err != nil {
 		return false, err
 	}
 
 	return exists, nil
 }
-func IsApplicationOwner(api *config.ApiConfig, applicationID, employeeID int) (bool, error) {
+
+func IsValidApplication(
+	api *config.ApiConfig,
+	applicationID, taskID, applicantID int,
+) (bool, error) {
 
 	query := `
-		SELECT EXISTS(
+		SELECT EXISTS (
 			SELECT 1
 			FROM task_application
 			WHERE task_application_id = $1
-			AND employee_id = $2
+			  AND task_id = $2
+			  AND employee_id = $3
 		)
 	`
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		3*time.Second,
+	)
 	defer cancel()
 
 	var exists bool
 
-	err := api.DB.QueryRowContext(ctx, query, applicationID, employeeID).Scan(&exists)
+	err := api.DB.QueryRowContext(
+		ctx,
+		query,
+		applicationID,
+		taskID,
+		applicantID,
+	).Scan(&exists)
+
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
+func IsApplicationOwner(
+	api *config.ApiConfig,
+	applicationID, employeeID int,
+) (bool, error) {
+
+	query := `
+		SELECT EXISTS (
+			SELECT 1
+			FROM task_application
+			WHERE task_application_id = $1
+			  AND employee_id = $2
+		)
+	`
+
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		3*time.Second,
+	)
+	defer cancel()
+
+	var exists bool
+
+	err := api.DB.QueryRowContext(
+		ctx,
+		query,
+		applicationID,
+		employeeID,
+	).Scan(&exists)
+
 	if err != nil {
 		return false, err
 	}
@@ -508,44 +570,77 @@ func CheckTasksExist(api *config.ApiConfig, tasks_id int) bool {
 	return exists
 }
 
-func TaskFeeds(api *config.ApiConfig) ([]models.Taskfeed, error) {
+func TaskFeeds(
+	api *config.ApiConfig,
+	userID int,
+) ([]models.Taskfeed, error) {
+
 	query := `
-	SELECT
-		tk.task_id,
-		tk.user_id,
-		tk.user_id AS employer_id,
-		u.username,
-		COALESCE(u.profile_pics, '') AS profile_pics,
-		tk.title,
-		tk.description,
-		tk.reward,
-		u.role,
-		tk.status,
-		tk.deadline,
-		COUNT(ta.task_application_id) AS applicant_count
-	FROM tasks tk
-	JOIN users u
-		ON tk.user_id = u.user_id
-	LEFT JOIN task_application ta
-		ON tk.task_id = ta.task_id
-	GROUP BY
-		tk.task_id,
-		tk.user_id,
-		u.username,
-		u.profile_pics,
-		tk.title,
-		tk.description,
-		tk.reward,
-		u.role,
-		tk.status,
-		tk.deadline,
-		tk.created_at
-	ORDER BY tk.created_at DESC;
-`
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		SELECT
+			tk.task_id,
+			tk.user_id,
+			tk.user_id AS employer_id,
+			u.username,
+			COALESCE(u.profile_pics, '') AS profile_pics,
+			tk.title,
+			tk.description,
+			tk.reward,
+			u.role,
+			tk.status,
+			tk.deadline,
+
+			COUNT(ta.task_application_id) AS applicant_count,
+
+			EXISTS (
+				SELECT 1
+				FROM task_application my_app
+				WHERE my_app.task_id = tk.task_id
+				  AND my_app.employee_id = $1
+			) AS is_applied,
+
+			(
+				SELECT my_app.task_application_id
+				FROM task_application my_app
+				WHERE my_app.task_id = tk.task_id
+				  AND my_app.employee_id = $1
+				LIMIT 1
+			) AS application_id
+
+		FROM tasks tk
+
+		JOIN users u
+			ON tk.user_id = u.user_id
+
+		LEFT JOIN task_application ta
+			ON tk.task_id = ta.task_id
+
+		GROUP BY
+			tk.task_id,
+			tk.user_id,
+			u.username,
+			u.profile_pics,
+			tk.title,
+			tk.description,
+			tk.reward,
+			u.role,
+			tk.status,
+			tk.deadline,
+			tk.created_at
+
+		ORDER BY tk.created_at DESC;
+	`
+
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		3*time.Second,
+	)
 	defer cancel()
 
-	rows, err := api.DB.QueryContext(ctx, query)
+	rows, err := api.DB.QueryContext(
+		ctx,
+		query,
+		userID,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -554,6 +649,7 @@ func TaskFeeds(api *config.ApiConfig) ([]models.Taskfeed, error) {
 	var tasks []models.Taskfeed
 
 	for rows.Next() {
+
 		var task models.Taskfeed
 
 		err := rows.Scan(
@@ -569,6 +665,8 @@ func TaskFeeds(api *config.ApiConfig) ([]models.Taskfeed, error) {
 			&task.Status,
 			&task.Deadline,
 			&task.ApplicantCount,
+			&task.IsApplied,
+			&task.ApplicationID,
 		)
 
 		if err != nil {
@@ -608,4 +706,162 @@ func GetTaskOwner(api *config.ApiConfig, taskID int) (int, error) {
 	}
 
 	return employerID, nil
+}
+
+func GetTaskEmployer(
+	api *config.ApiConfig,
+	taskID int,
+) (int, error) {
+
+	query := `
+		SELECT user_id
+		FROM tasks
+		WHERE task_id = $1
+	`
+
+	var employerID int
+
+	err := api.DB.QueryRow(
+		query,
+		taskID,
+	).Scan(&employerID)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, fmt.Errorf("task not found")
+		}
+
+		return 0, err
+	}
+
+	return employerID, nil
+}
+func IsTaskEmployer(
+	api *config.ApiConfig,
+	taskID int,
+	employerID int,
+) (bool, error) {
+
+	query := `
+		SELECT EXISTS (
+			SELECT 1
+			FROM tasks
+			WHERE task_id = $1
+			  AND user_id = $2
+		)
+	`
+
+	var exists bool
+
+	err := api.DB.QueryRow(
+		query,
+		taskID,
+		employerID,
+	).Scan(&exists)
+
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
+
+func GetConversation(
+	api *config.ApiConfig,
+	taskID int,
+	conversationID int,
+) (models.Conversation, error) {
+
+	query := `
+		SELECT
+			conversation_id,
+			task_id,
+			employer_id,
+			applicant_id,
+			created_at
+		FROM conversations
+		WHERE conversation_id = $1
+		  AND task_id = $2
+	`
+
+	var conversation models.Conversation
+
+	err := api.DB.QueryRow(
+		query,
+		conversationID,
+		taskID,
+	).Scan(
+		&conversation.ConversationID,
+		&conversation.TaskID,
+		&conversation.EmployerID,
+		&conversation.ApplicantID,
+		&conversation.CreatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return models.Conversation{}, fmt.Errorf(
+				"conversation not found",
+			)
+		}
+
+		return models.Conversation{}, err
+	}
+
+	return conversation, nil
+}
+
+func GetConversationMessages(
+	api *config.ApiConfig,
+	conversationID int,
+) ([]models.SendMessage, error) {
+
+	query := `
+		SELECT
+			message_id,
+			conversation_id,
+			sender_id,
+			content,
+			created_at
+		FROM messages
+		WHERE conversation_id = $1
+		ORDER BY created_at ASC
+	`
+
+	rows, err := api.DB.Query(
+		query,
+		conversationID,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var messages []models.SendMessage
+
+	for rows.Next() {
+
+		var message models.SendMessage
+
+		err := rows.Scan(
+			&message.MessageID,
+			&message.ConversationID,
+			&message.SenderID,
+			&message.Content,
+			&message.CreatedAt,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		messages = append(messages, message)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return messages, nil
 }

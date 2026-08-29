@@ -67,4 +67,6 @@ type Taskfeed struct {
 	Status         string `json:"status"`
 	Deadline       string `json:"deadline"`
 	ApplicantCount int    `json:"applicant_count"`
+	IsApplied bool
+	ApplicationID *int
 }

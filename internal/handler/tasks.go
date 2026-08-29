@@ -8,6 +8,7 @@ import (
 	middleware "github.com/Davethompson01/rialo_hub_backend/Middleware"
 	"github.com/Davethompson01/rialo_hub_backend/config"
 	auth "github.com/Davethompson01/rialo_hub_backend/internal/Auth"
+	repository "github.com/Davethompson01/rialo_hub_backend/internal/Repository"
 	"github.com/Davethompson01/rialo_hub_backend/internal/models"
 	"github.com/Davethompson01/rialo_hub_backend/internal/services"
 	"github.com/go-chi/chi"
@@ -252,12 +253,13 @@ func DeleteTask(api *config.ApiConfig) http.HandlerFunc {
 
 func Taskfeed(api *config.ApiConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// claims := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
-		feeds, err := services.TasksFeeds(api)
+		claims := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
+		feeds, err := repository.TaskFeeds(api, claims.UserID)
 		if err != nil {
 			RespondWithJson(w, http.StatusUnauthorized, false, err.Error(), nil)
 			return
 		}
+
 		RespondWithJson(
 			w,
 			http.StatusOK,

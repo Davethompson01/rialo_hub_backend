@@ -17,7 +17,9 @@ import (
 
 func CreateNegotiation(api *config.ApiConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
 		var message models.SendMessage
+
 		if err := json.NewDecoder(r.Body).Decode(&message); err != nil {
 			RespondWithJson(
 				w,
@@ -28,18 +30,43 @@ func CreateNegotiation(api *config.ApiConfig) http.HandlerFunc {
 			)
 			return
 		}
-		claims := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
-		message.ApplicantID = claims.UserID
-		message.CreatedBy = claims.UserID
-		message.CreatedAt = time.Now()
 
-		CreateNegotiation, err := services.CreateNegotiation(api, message)
-		if err != nil {
-			RespondWithJson(w, 400, false, err.Error(), nil)
+		claims, ok := r.Context().Value(middleware.ClaimsKey).(*auth.Claims)
+		if !ok {
+			RespondWithJson(
+				w,
+				http.StatusUnauthorized,
+				false,
+				"Unauthorized",
+				nil,
+			)
 			return
 		}
 
-		RespondWithJson(w, 200, true, "User can now Negotiate", CreateNegotiation)
+		message.CreatedBy = claims.UserID
+		message.CreatedAt = time.Now()
+		message.ApplicantID = claims.UserID
+
+
+		negotiation, err := services.CreateNegotiation(api, message)
+		if err != nil {
+			RespondWithJson(
+				w,
+				http.StatusBadRequest,
+				false,
+				err.Error(),
+				nil,
+			)
+			return
+		}
+
+		RespondWithJson(
+			w,
+			http.StatusOK,
+			true,
+			"User can now Negotiate",
+			negotiation,
+		)
 	}
 }
 
@@ -342,4 +369,144 @@ func GetConversationMessagesHandler(
             result,
         )
     }
+}
+
+
+
+func StartNegotiation(api *config.ApiConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		var message models.SendMessage
+
+		if err := json.NewDecoder(r.Body).Decode(&message); err != nil {
+			RespondWithJson(
+				w,
+				http.StatusBadRequest,
+				false,
+				"Invalid request body",
+				nil,
+			)
+			return
+		}
+
+		claims, ok := r.Context().Value(
+			middleware.ClaimsKey,
+		).(*auth.Claims)
+
+		if !ok {
+			RespondWithJson(
+				w,
+				http.StatusUnauthorized,
+				false,
+				"Unauthorized",
+				nil,
+			)
+			return
+		}
+
+		// Never trust ApplicantID from frontend
+		message.ApplicantID = claims.UserID
+		message.CreatedBy = claims.UserID
+		message.CreatedAt = time.Now()
+
+		negotiation, err := services.StartNegotiation(
+			api,
+			message,
+		)
+
+		if err != nil {
+			RespondWithJson(
+				w,
+				http.StatusBadRequest,
+				false,
+				err.Error(),
+				nil,
+			)
+			return
+		}
+
+		RespondWithJson(
+			w,
+			http.StatusOK,
+			true,
+			"Negotiation started",
+			negotiation,
+		)
+	}
+}
+
+
+
+func GetNegotiation(api *config.ApiConfig) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		claims, ok := r.Context().Value(
+			middleware.ClaimsKey,
+		).(*auth.Claims)
+
+		if !ok {
+			RespondWithJson(
+				w,
+				http.StatusUnauthorized,
+				false,
+				"Unauthorized",
+				nil,
+			)
+			return
+		}
+
+		taskID, err := strconv.Atoi(
+			chi.URLParam(r, "taskID"),
+		)
+		if err != nil {
+			RespondWithJson(
+				w,
+				http.StatusBadRequest,
+				false,
+				"Invalid task ID",
+				nil,
+			)
+			return
+		}
+
+		conversationID, err := strconv.Atoi(
+			chi.URLParam(r, "conversationID"),
+		)
+		if err != nil {
+			RespondWithJson(
+				w,
+				http.StatusBadRequest,
+				false,
+				"Invalid conversation ID",
+				nil,
+			)
+			return
+		}
+
+		negotiation, err := services.GetEmployerNegotiation(
+			api,
+			taskID,
+			conversationID,
+			claims.UserID,
+		)
+
+		if err != nil {
+			RespondWithJson(
+				w,
+				http.StatusBadRequest,
+				false,
+				err.Error(),
+				nil,
+			)
+			return
+		}
+
+		RespondWithJson(
+			w,
+			http.StatusOK,
+			true,
+			"Negotiation retrieved",
+			negotiation,
+		)
+	}
 }

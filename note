@@ -192,18 +192,42 @@
 -- );
 
 
-SELECT conversation_id, employer_id, applicant_id
-FROM conversations
-WHERE conversation_id = 20;
+-- SELECT conversation_id, employer_id, applicant_id
+-- FROM conversations
+-- WHERE conversation_id = 20;
+
+-- SELECT
+--     tc.constraint_name,
+--     kcu.column_name,
+--     ccu.table_name AS referenced_table,
+--     ccu.column_name AS referenced_column
+-- FROM information_schema.table_constraints AS tc
+-- JOIN information_schema.key_column_usage AS kcu
+--     ON tc.constraint_name = kcu.constraint_name
+-- JOIN information_schema.constraint_column_usage AS ccu
+--     ON tc.constraint_name = ccu.constraint_name
+-- WHERE tc.constraint_name = 'messages_conversation_id_fkey';
+
+
+
 
 SELECT
-    tc.constraint_name,
-    kcu.column_name,
-    ccu.table_name AS referenced_table,
-    ccu.column_name AS referenced_column
-FROM information_schema.table_constraints AS tc
-JOIN information_schema.key_column_usage AS kcu
-    ON tc.constraint_name = kcu.constraint_name
-JOIN information_schema.constraint_column_usage AS ccu
-    ON tc.constraint_name = ccu.constraint_name
-WHERE tc.constraint_name = 'messages_conversation_id_fkey';
+    constraint_name,
+    constraint_type
+FROM information_schema.table_constraints
+WHERE table_name = 'conversations';
+
+
+SELECT
+    column_name,
+    data_type,
+    is_nullable
+FROM information_schema.columns
+WHERE table_name = 'conversations'
+ORDER BY ordinal_position;
+
+SELECT
+    conname AS constraint_name,
+    pg_get_constraintdef(oid) AS definition
+FROM pg_constraint
+WHERE conrelid = 'conversations'::regclass;

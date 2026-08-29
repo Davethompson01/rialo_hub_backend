@@ -18,12 +18,15 @@ func Message(r chi.Router, api *config.ApiConfig) {
 			handler.CreateMessage(api),
 		)
 
-		r.Post("/negotiate", handler.CreateNegotiation(api))
+		r.Post("/negotiateapplicant", handler.StartNegotiation(api))
 
 		r.Get(
 			"/{conversationID}/messages",
 			handler.GetConversationMessagesHandler(api),
 		)
 
+
+		r.Get("/negotiateEmployee/{taskID}/{conversationID}", handler.GetNegotiation(api))
 	})
+
 }
