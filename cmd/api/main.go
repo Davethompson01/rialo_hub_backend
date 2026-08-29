@@ -53,7 +53,7 @@ func main() {
 	router.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{
 			"http://localhost:5173",
-			"https://rialohub-one.vercel.app/",
+			"https://rialohub-one.vercel.app",
 		},
 		AllowedMethods: []string{
 			"GET",
