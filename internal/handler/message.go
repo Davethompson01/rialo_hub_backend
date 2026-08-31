@@ -306,7 +306,7 @@ func GetConversationMessagesHandler(
 	}
 }
 
- func CreateMessage(
+func CreateMessage(
     api *config.ApiConfig,
 ) http.HandlerFunc {
 
@@ -340,9 +340,9 @@ func GetConversationMessagesHandler(
             return
         }
 
-        message.ApplicantID = claims.UserID
-        message.CreatedBy = claims.UserID
+        // Never trust sender ID from frontend.
         message.SenderID = claims.UserID
+        message.CreatedBy = claims.UserID
         message.CreatedAt = time.Now()
 
         result, err := services.SendMessage(

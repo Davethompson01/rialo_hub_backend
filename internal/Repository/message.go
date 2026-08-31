@@ -20,6 +20,52 @@ func SendMessage(
 	)
 	defer cancel()
 
+	fmt.Println("ConversationID:", message.ConversationID)
+	fmt.Println("SenderID:", message.SenderID)
+	fmt.Println("Content:", message.Content)
+	fmt.Println("CreatedAt:", message.CreatedAt)
+
+	// --------------------------------------------------
+	// 1. Validate that the sender belongs to the
+	//    conversation
+	// --------------------------------------------------
+
+	var participant bool
+
+	err := api.DB.QueryRowContext(
+		ctx,
+		`
+		SELECT EXISTS (
+			SELECT 1
+			FROM conversations
+			WHERE conversation_id = $1
+			  AND (
+				  employer_id = $2
+				  OR applicant_id = $2
+			  )
+		)
+		`,
+		message.ConversationID,
+		message.SenderID,
+	).Scan(&participant)
+
+	if err != nil {
+		return models.MessageResponse{}, fmt.Errorf(
+			"failed to validate conversation: %w",
+			err,
+		)
+	}
+
+	if !participant {
+		return models.MessageResponse{}, fmt.Errorf(
+			"you are not a participant in this conversation",
+		)
+	}
+
+	// --------------------------------------------------
+	// 2. Insert the message
+	// --------------------------------------------------
+
 	query := `
 		INSERT INTO messages (
 			conversation_id,
@@ -37,12 +83,8 @@ func SendMessage(
 	`
 
 	var savedMessage models.MessageResponse
-	fmt.Println("ConversationID:", message.ConversationID)
-	fmt.Println("SenderID:", message.SenderID)
-	fmt.Println("Content:", message.Content)
-	fmt.Println("CreatedAt:", message.CreatedAt)
 
-	err := api.DB.QueryRowContext(
+	err = api.DB.QueryRowContext(
 		ctx,
 		query,
 		message.ConversationID,
@@ -64,31 +106,38 @@ func SendMessage(
 		)
 	}
 
-	// Determine the other participant.
+	// --------------------------------------------------
+	// 3. Determine the other participant
+	// --------------------------------------------------
+
 	var receiverID int
 
 	err = api.DB.QueryRowContext(
 		ctx,
 		`
 		SELECT
-    CASE
-        WHEN employer_id = $1 THEN applicant_id
-        WHEN applicant_id = $1 THEN employer_id
-        ELSE NULL
-    END
-FROM conversations
-WHERE conversation_id = $2
+			CASE
+				WHEN employer_id = $1 THEN applicant_id
+				WHEN applicant_id = $1 THEN employer_id
+				ELSE NULL
+			END
+		FROM conversations
+		WHERE conversation_id = $2
 		`,
 		message.SenderID,
 		message.ConversationID,
 	).Scan(&receiverID)
-	fmt.Println(message.ConversationID)
+
 	if err != nil {
 		return models.MessageResponse{}, fmt.Errorf(
 			"failed to find message receiver: %w",
 			err,
 		)
 	}
+
+	// --------------------------------------------------
+	// 4. Send WebSocket notification
+	// --------------------------------------------------
 
 	event := models.WebSocketEvent{
 		Type: "new_message",
