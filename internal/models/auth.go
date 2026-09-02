@@ -1,10 +1,10 @@
 package models
 
 type Register struct {
-	DiscordUserName string `validate:"required,min=3,max=50"`
-	UserName        string `validate:"required,min=3,max=50"`
-	Role            string `json:"role"`
-	Password        string `validate:"required,min=8"`
+    DiscordUserName string   `json:"DiscordUserName" validate:"required,min=3,max=50"`
+    UserName        string   `json:"Username" validate:"required,min=3,max=50"`
+    Roles           []string `json:"role" validate:"required,min=1"`
+    Password        string   `json:"password" validate:"required,min=8"`
 }
 
 type Login struct {

@@ -7,12 +7,13 @@ import (
 	"github.com/go-chi/chi"
 )
 
-func Dashboard(r chi.Router, api *config.ApiConfig) {
+func Profile(r chi.Router, api *config.ApiConfig) {
 
-	r.Route("/dashboard", func(r chi.Router) {
+	r.Route("/user", func(r chi.Router) {
 		r.Use(middleware.APIKey)
 		r.Use(middleware.JWTMiddleware)
 		// r.Use(middleware.RequireRole("admin", "super_admin", "Artist", "Writer", "Moderators"))
-		r.Get("/feed", handler.DashboardFeed(api))
+
+		r.Post("/profile", handler.GetUserProfile(api))
 	})
 }

@@ -40,13 +40,7 @@ type UpdateApplicationStatus struct {
 	Status        string
 }
 
-type Profile struct {
-	UserID           int
-	Profile_pics     string
-	Discord_username string
-	Username         string
-	Role             string
-}
+
 
 type TaskResponse struct {
 	Task Task    `json:"task"`

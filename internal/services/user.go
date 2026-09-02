@@ -7,7 +7,7 @@ import (
 )
 
 func GetUserProfile(api *config.ApiConfig, userID int) (models.Profile, error) {
-	profile, err := repository.SelectUserByID(api, userID)
+	profile, err := repository.GetUserProfile(api, userID)
 	if err != nil {
 		return models.Profile{}, err
 	}

@@ -12,7 +12,7 @@ func Offer(r chi.Router, api *config.ApiConfig) {
 
 		r.Use(middleware.APIKey)
 		r.Use(middleware.JWTMiddleware)
-		r.Use(middleware.RequireRole("admin", "super_admin", "Artist", "Writer", "Moderators"))
+		// r.Use(middleware.RequireRole("admin", "super_admin", "Artist", "Writer", "Moderators"))
 
 		// Employer receives applicant offers
 		r.Get(

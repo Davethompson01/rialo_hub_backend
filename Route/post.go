@@ -11,7 +11,7 @@ func Post(r chi.Router, api *config.ApiConfig) {
 	r.Route("/posts", func(r chi.Router) {
 		r.Use(middleware.APIKey)
 		r.Use(middleware.JWTMiddleware)
-		r.Use(middleware.RequireRole("admin", "super_admin", "Artist", "Writer", "Moderators"))
+		// r.Use(middleware.RequireRole("admin", "super_admin", "Artist", "Writer", "Moderators"))
 
 		r.Post("/create", handler.CreatePost(api))
 		r.Get("/", handler.GetPostFeed(api))
@@ -29,7 +29,7 @@ func Post(r chi.Router, api *config.ApiConfig) {
 	r.Route("/comments", func(r chi.Router) {
 		r.Use(middleware.APIKey)
 		r.Use(middleware.JWTMiddleware)
-		r.Use(middleware.RequireRole("admin", "super_admin", "Artist", "Writer", "Moderators"))
+		// r.Use(middleware.RequireRole("admin", "super_admin", "Artist", "Writer", "Moderators"))
 
 		r.Put("/{commentID}", handler.UpdateComment(api))
 		r.Delete("/{commentID}", handler.DeleteComment(api))

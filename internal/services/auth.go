@@ -31,7 +31,6 @@ func Register(api *config.ApiConfig, register models.Register) (string, error) {
 	}
 
 	return "Rialo Account successfully created", nil
-
 }
 
 func LoginInto_AsStudent(apicfg *config.ApiConfig, login models.Login) (models.LoginTokens, error) {

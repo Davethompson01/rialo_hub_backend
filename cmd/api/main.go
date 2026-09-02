@@ -81,6 +81,7 @@ func main() {
 	route.Dashboard(routes, &config)
 	route.Message(routes, &config)
 	route.Offer(routes, &config)
+	route.Profile(routes, &config)
 	router.Mount("/v1", routes)
 	server := &http.Server{
 		Handler: router,

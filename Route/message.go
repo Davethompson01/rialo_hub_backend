@@ -11,7 +11,7 @@ func Message(r chi.Router, api *config.ApiConfig) {
 	r.Route("/conversations", func(r chi.Router) {
 		r.Use(middleware.APIKey)
 		r.Use(middleware.JWTMiddleware)
-		r.Use(middleware.RequireRole("admin", "super_admin", "Artist", "Writer", "Moderators"))
+		// r.Use(middleware.RequireRole("admin", "super_admin", "Artist", "Writer", "Moderators"))
 
 		r.Post(
 			"/message",

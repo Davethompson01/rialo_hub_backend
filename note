@@ -231,3 +231,21 @@ SELECT
     pg_get_constraintdef(oid) AS definition
 FROM pg_constraint
 WHERE conrelid = 'conversations'::regclass;
+
+
+
+
+
+ALTER TABLE users
+ALTER COLUMN role TYPE VARCHAR(50)
+USING role::text;
+
+
+ALTER TABLE users
+ALTER COLUMN role TYPE TEXT[]
+USING ARRAY[role];
+
+
+ALTER TABLE users
+ALTER COLUMN role TYPE TEXT[]
+USING ARRAY[role::text];
