@@ -146,15 +146,17 @@ func StartNegotiation(
 		api,
 		negotiate.ApplicationID,
 		negotiate.TaskId,
+
 		negotiate.ApplicantID,
 	)
 	if err != nil {
 		return models.NegotiationResponse{}, err
 	}
+	
 
 	if !validApplication {
 		return models.NegotiationResponse{}, fmt.Errorf(
-			"invalid application for this task",
+			"invalid application for this task %f", validApplication,
 		)
 	}
 
@@ -229,4 +231,3 @@ func GetEmployerNegotiation(
 		Messages:       messages,
 	}, nil
 }
-

@@ -307,25 +307,28 @@ func GetAllApplicantOffer(
 ) ([]models.OfferResponse, error) {
 
 	query := `
-		SELECT
-			o.offer_id,
-			o.task_id,
-			o.conversation_id,
-			o.employer_id,
-			o.applicant_id,
-			o.created_by,
-			o.amount,
-			o.status,
-			u.username,
-			COALESCE(u.profile_pics, '') AS avatar,
-			o.created_at
-		FROM offers o
-		JOIN users u
-			ON o.applicant_id = u.user_id
-		WHERE o.employer_id = $1
-		ORDER BY o.created_at DESC
-	`
-
+    SELECT
+        o.offer_id,
+        a.task_application_id,
+        o.task_id,
+        o.conversation_id,
+        o.employer_id,
+        o.applicant_id,
+        o.created_by,
+        o.amount,
+        o.status,
+        u.username,
+        COALESCE(u.profile_pics, '') AS avatar,
+        o.created_at
+    FROM offers o
+    JOIN task_application a
+        ON a.task_id = o.task_id
+        AND a.employee_id = o.applicant_id
+    JOIN users u
+        ON o.applicant_id = u.user_id
+    WHERE o.employer_id = $1
+    ORDER BY o.created_at DESC
+`
 	ctx, cancel := context.WithTimeout(
 		context.Background(),
 		3*time.Second,
@@ -350,6 +353,7 @@ func GetAllApplicantOffer(
 
 		err := rows.Scan(
 			&offer.OfferID,
+			&offer.ApplicationID,
 			&offer.TaskID,
 			&offer.ConversationID,
 			&offer.EmployerID,
@@ -387,6 +391,7 @@ func GetApplicationOffers(
 	query := `
 		SELECT
 			o.offer_id,
+			a.task_application_id,
 			o.task_id,
 			o.conversation_id,
 			o.employer_id,
@@ -398,6 +403,9 @@ func GetApplicationOffers(
 			COALESCE(u.profile_pics, '') AS avatar,
 			o.created_at
 		FROM offers o
+		JOIN task_application a
+			ON a.task_id = o.task_id
+			AND a.employee_id = o.applicant_id
 		JOIN users u
 			ON o.employer_id = u.user_id
 		WHERE o.applicant_id = $1
@@ -423,11 +431,11 @@ func GetApplicationOffers(
 	offers := make([]models.OfferResponse, 0)
 
 	for rows.Next() {
-
 		var offer models.OfferResponse
 
 		err := rows.Scan(
 			&offer.OfferID,
+			&offer.ApplicationID, // ← NEW
 			&offer.TaskID,
 			&offer.ConversationID,
 			&offer.EmployerID,
@@ -456,7 +464,6 @@ func GetApplicationOffers(
 
 	return offers, nil
 }
-
 func OfferOwner(api *config.ApiConfig, userID int) (bool, error) {
 
 	query :=
@@ -476,7 +483,6 @@ func OfferOwner(api *config.ApiConfig, userID int) (bool, error) {
 	return exists, nil
 
 }
-
 
 func CreateNegotiationTransaction(
 	api *config.ApiConfig,
@@ -647,11 +653,13 @@ func CreateNegotiationTransaction(
 	).Scan(&offerID)
 
 	if err != nil {
-		return models.NegotiationResponse{}, fmt.Errorf(
-			"failed to insert offer: %w",
-			err,
-		)
-	}
+    fmt.Printf("OFFER INSERT ERROR: %v\n", err)
+
+    return models.NegotiationResponse{}, fmt.Errorf(
+        "failed to insert offer: %w",
+        err,
+    )
+}
 
 	// ============================================================
 	// 5. NOTIFY EMPLOYER
@@ -734,7 +742,7 @@ func CreateNegotiationTransaction(
 
 	// ============================================================
 	// 8. RETURN
-	// ============================================================
+	// ======================================================
 
 	return models.NegotiationResponse{
 		TaskID:         conversation.TaskId,
