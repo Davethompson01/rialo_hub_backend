@@ -1,32 +1,26 @@
 package handler
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 
-	middleware "github.com/Davethompson01/rialo_hub_backend/Middleware"
 	"github.com/Davethompson01/rialo_hub_backend/config"
-	auth "github.com/Davethompson01/rialo_hub_backend/internal/Auth"
+	"github.com/Davethompson01/rialo_hub_backend/internal/models"
 	"github.com/Davethompson01/rialo_hub_backend/internal/services"
 )
 
 func GetUserProfile(api *config.ApiConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
-		claimsValue := r.Context().Value(middleware.ClaimsKey)
-
-		claims, ok := claimsValue.(*auth.Claims)
-		if !ok || claims == nil {
-			RespondWithJson(
-				w,
-				http.StatusUnauthorized,
-				false,
-				"Unauthorized",
-				nil,
-			)
+		var profile models.Profile
+		
+		if err := json.NewDecoder(r.Body).Decode(&profile); err != nil {
+			RespondWithJson(w, http.StatusBadRequest, false, err.Error(), nil)
 			return
 		}
 
-		getprofile, err := services.GetUserProfile(api, claims.UserID)
+		fmt.Println(profile.UserID)
+		getprofile, err := services.GetUserProfile(api, profile.UserID)
 		if err != nil {
 			RespondWithJson(
 				w,
