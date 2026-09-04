@@ -34,7 +34,7 @@ type PostAuthor struct {
 }
 
 type PostResponse struct {
-	PostID      int             `json:"post_id"`
+	PostID      int             `json:"id"`
 	UserID      int             `json:"user_id"`
 	Username    string          `json:"username"`
 	Title       string          `json:"title"`
